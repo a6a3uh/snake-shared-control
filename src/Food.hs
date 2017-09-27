@@ -21,7 +21,8 @@ moveFood = do
     || length (unique places) /= length places              -- several foods at same place
   then do put $ world & gen .~ g
           moveFood
-  else put $ world & gen .~ g & table .~ newTable
+  else let newTable' = newTable & traverse . prob %~ ( / (fromIntegral . length) newTable )
+       in put $ world & gen .~ g & table .~ newTable'
 
 eatFood :: State World Bool
 eatFood  = do

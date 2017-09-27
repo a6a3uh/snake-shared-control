@@ -5,7 +5,6 @@ module Draw where
 import qualified Graphics.Gloss.Interface.Pure.Game as G
 import Control.Lens
 import Control.Monad.State
-import Linear.V2
 import Snake
 import World
 
@@ -99,7 +98,7 @@ drawText :: Food -> GameWorld -> Pos -> G.Picture
 drawText food = drawPos (G.color G.red (G.scale 0.1 0.1 (G.text . show $ food ^. reward)))
 
 drawPos :: G.Picture -> GameWorld -> Pos -> G.Picture
-drawPos pic gworld (V2 x y) =
+drawPos pic gworld (x, y) =
     let s = size gworld / fromIntegral (worldScale settings)
         x' = s * fromIntegral x
         y' = s * fromIntegral y

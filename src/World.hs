@@ -6,7 +6,6 @@ import Test.QuickCheck.Arbitrary
 import Test.QuickCheck.Gen
 import System.Random
 import Control.Lens
-import Linear.V2
 -- import qualified Data.MemoCombinators as Memo
 
 data Settings = NewSettings
@@ -15,13 +14,14 @@ data Settings = NewSettings
     , worldScale :: Int
     }
 
-type Pos = V2 Int
+type Pos = (Int, Int)
 
 data Direction
-    = North
+    = West
     | East
     | South
-    | West
+    | North
+    
     deriving (Bounded, Enum, Eq, Ord, Read, Show)
 
 data World = NewWorld
@@ -34,11 +34,12 @@ data World = NewWorld
     } deriving (Read, Show)
 
 type Reward = Int
-type MotionCost = [Int]
+type Probability = Double
 
 data Food = NewFood
     { _place :: Pos
     , _reward :: Reward
+    , _prob :: Probability
     } deriving (Read, Show)
 
 makeLenses ''World
@@ -50,26 +51,27 @@ instance Arbitrary Food where
     x <- choose (-s, s)
     y <- choose (-s, s)
     rew <- choose (rewardBounds settings)
-    return $ NewFood (V2 x y) rew
+    let p  = 1
+    return $ NewFood (x, y) rew p
 
 settings :: Settings
 settings = NewSettings
     { numFoodBounds = (2, 5)
-    , rewardBounds = (0, 5)
+    , rewardBounds = (-5, 5)
     , worldScale = 15
     }
 
 initialWorld :: Int -> World
 initialWorld seed = NewWorld
     { _direction = North
-    , _snake = [V2 0 2, V2 0 1, V2 0 0, V2 0 (-1), V2 0 (-2)]
+    , _snake = [(0, 2), (0, 1), (0, 0), (0, (-1)), (0, (-2))]
     , _stomack = 0
     , _isOver = False
     , _gen = mkStdGen seed
-    , _table = [NewFood {_place = V2 0 3, _reward = 0}]
+    , _table = [NewFood {_place = (0, 3), _reward = 0, _prob = 1}]
     }
 
 inBounds :: Pos -> Bool
-inBounds (V2 x y) =
+inBounds (x, y) =
     let s = worldScale settings `div` 2
     in  -s <= x && x <= s && -s <= y && y <= s
