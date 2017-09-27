@@ -33,20 +33,27 @@ moveSnake world = case compare (world ^. stomack) 0 of
                     LT -> world & snake %~ init   & stomack %~ succ -- check for init of empty list !!!
                     GT -> world & snake %~ (pos:) & stomack %~ pred
                     EQ -> world & snake %~ (\xs -> pos : init xs)
-    where pos = let (x, y) = head (world ^. snake)
-                    ps = world ^.. table . traverse . place
-                    pr = world ^.. table . traverse . prob
-                    costs = markovOut (x, y) ps pr
-                in case fromJust $ elemIndex (minimum costs) costs of 
-                        0 -> (x - 1, y)
-                        1 -> (x + 1, y)
-                        2 -> (x, y - 1)
-                        3 -> (x, y + 1)
+    where   (x, y) = head (world ^. snake)
+            newpos a = case a of 
+                0 -> (x - 1, y)
+                1 -> (x + 1, y)
+                2 -> (x, y - 1)
+                3 -> (x, y + 1)
+            minIndex xs = fromJust $ elemIndex (minimum xs) xs
+            minPossibleIndex xs costs = let i = minIndex costs 
+                                        in  if newpos i `elem` xs 
+                                            then minPossibleIndex xs (costs & ix i .~ 1000000000)
+                                            else i
+            pos =   let ps      = world ^.. table . traverse . place
+                        pr      = world ^.. table . traverse . prob
+                        costs   = markovOut (x, y) ps pr
+                    in  newpos $ minPossibleIndex (world ^. snake) costs 
                     -- case world ^. direction of
                     -- North -> V2 x (y + 1)
                     -- East  -> V2 (x + 1)  y
                     -- South -> V2 x (y - 1)
                     -- West  -> V2 (x - 1) y
+          
 
 commandSnake :: Direction -> World -> World
 commandSnake dir world = world 
