@@ -21,7 +21,7 @@ data GameSettings = NewGameSettings
 makeLenses ''GameWorld
 
 gameSettings :: GameSettings
-gameSettings = NewGameSettings { snakeSettings = settings, stepRate = 2 }
+gameSettings = NewGameSettings { snakeSettings = settings, stepRate = 5 }
 
 initialGameWorld :: Int -> GameWorld
 initialGameWorld seed = NewGameWorld

@@ -24,7 +24,7 @@ stepSnake = do
 gameOver :: World -> World
 gameOver w = let (x:xs) = w ^. snake
              in if    inBounds x           -- inside world
-                --    && (x `notElem` xs)         -- not eaten itself
+                   && (x `notElem` xs)         -- not eaten itself
                 then w else w & isOver .~ True
                 
 
@@ -41,20 +41,14 @@ moveSnake world = case compare (world ^. stomack) 0 of
                 3 -> (x, y + 1)
             minIndex xs = fromJust $ elemIndex (minimum xs) xs
             minPossibleIndex xs costs = let i = minIndex costs 
-                                        in  if newpos i `elem` xs 
-                                            then minPossibleIndex xs (costs & ix i .~ 1000000000)
-                                            else i
+                                        in  if newpos i `notElem` xs || costs !! i == 1000000000
+                                            then i
+                                            else minPossibleIndex xs (costs & ix i .~ 1000000000)
             pos =   let ps      = world ^.. table . traverse . place
                         pr      = world ^.. table . traverse . prob
                         costs   = markovOut (x, y) ps pr
                     in  newpos $ minPossibleIndex (world ^. snake) costs 
-                    -- case world ^. direction of
-                    -- North -> V2 x (y + 1)
-                    -- East  -> V2 (x + 1)  y
-                    -- South -> V2 x (y - 1)
-                    -- West  -> V2 (x - 1) y
           
-
 commandSnake :: Direction -> World -> World
 commandSnake dir world = world 
                             & table . traverse . reward %~ pred 
