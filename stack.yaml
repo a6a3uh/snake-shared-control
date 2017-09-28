@@ -38,8 +38,9 @@ resolver: lts-9.6
 packages:
 - .
 - location:
-    git: git@gitlab.com:a6a3uh/pomp.git
-    commit: 399c2a8f4940cd556bac94d37c535ca529bcacee
+    pomdp
+    # git: git@gitlab.com:a6a3uh/pomp.git
+    # commit: 399c2a8f4940cd556bac94d37c535ca529bcacee
   extra-dep: true
 # Dependency packages to be pulled from upstream that are not in the resolver
 # (e.g., acme-missiles-0.3)
