@@ -13,21 +13,7 @@ data GameWorld = NewGameWorld
   , _resolution :: (Int, Int)
   }
 
-data GameSettings = NewGameSettings
-  { snakeSettings :: Settings
-  , stepRate :: Int
-  }
-
 makeLenses ''GameWorld
-
-gameSettings :: GameSettings
-gameSettings = NewGameSettings { snakeSettings = settings, stepRate = 5 }
-
-initialGameWorld :: Int -> GameWorld
-initialGameWorld seed = NewGameWorld
-  { _snakeWorld = initialWorld seed
-  , _resolution = (400, 400)
-  }
 
 displayMode :: GameWorld -> G.Display
 displayMode gworld = G.InWindow "Snake" (gworld ^. resolution) (0, 0)
