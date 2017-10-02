@@ -5,6 +5,7 @@ module Draw where
 import qualified Graphics.Gloss.Interface.Pure.Game as G
 import Control.Lens
 import Control.Monad.State
+import Control.Monad.Writer
 import Snake
 import World
 
@@ -30,7 +31,7 @@ handleEvent event gworld = case event of
     where world = gworld ^. snakeWorld
 
 handleGameStep :: Float -> GameWorld -> GameWorld
-handleGameStep _time gworld = gworld & snakeWorld .~ execState stepSnake (gworld ^. snakeWorld)
+handleGameStep _time gworld = gworld & snakeWorld .~ (execState . liftM fst . runWriterT) stepSnake (gworld ^. snakeWorld)
 
 handleResize :: (Int, Int) -> GameWorld -> GameWorld
 handleResize newResolution gworld = gworld & resolution .~ newResolution
@@ -38,10 +39,10 @@ handleResize newResolution gworld = gworld & resolution .~ newResolution
 handleKey :: G.Key -> G.KeyState -> World -> World
 handleKey key state' world = case state' of
     G.Down -> case key of
-        G.SpecialKey G.KeyUp    -> commandSnake North world
-        G.SpecialKey G.KeyRight -> commandSnake East  world
-        G.SpecialKey G.KeyDown  -> commandSnake South world
-        G.SpecialKey G.KeyLeft  -> commandSnake West  world
+        G.SpecialKey G.KeyUp    -> (execState . liftM fst . runWriterT) (commandSnake North) world
+        G.SpecialKey G.KeyRight -> (execState . liftM fst . runWriterT) (commandSnake East)  world
+        G.SpecialKey G.KeyDown  -> (execState . liftM fst . runWriterT) (commandSnake South) world
+        G.SpecialKey G.KeyLeft  -> (execState . liftM fst . runWriterT) (commandSnake West)  world
         _ -> world
     _ -> world
 
