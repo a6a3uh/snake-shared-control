@@ -31,7 +31,7 @@ handleEvent event gworld = case event of
     where world = gworld ^. snakeWorld
 
 handleGameStep :: Float -> GameWorld -> GameWorld
-handleGameStep _time gworld = gworld & snakeWorld .~ (execState . liftM fst . runWriterT) stepSnake (gworld ^. snakeWorld)
+handleGameStep _time gworld = gworld & snakeWorld .~ (liftM (snd . fst . runWriter) . runStateT) stepSnake (gworld ^. snakeWorld)
 
 handleResize :: (Int, Int) -> GameWorld -> GameWorld
 handleResize newResolution gworld = gworld & resolution .~ newResolution
@@ -39,10 +39,10 @@ handleResize newResolution gworld = gworld & resolution .~ newResolution
 handleKey :: G.Key -> G.KeyState -> World -> World
 handleKey key state' world = case state' of
     G.Down -> case key of
-        G.SpecialKey G.KeyUp    -> (execState . liftM fst . runWriterT) (commandSnake North) world
-        G.SpecialKey G.KeyRight -> (execState . liftM fst . runWriterT) (commandSnake East)  world
-        G.SpecialKey G.KeyDown  -> (execState . liftM fst . runWriterT) (commandSnake South) world
-        G.SpecialKey G.KeyLeft  -> (execState . liftM fst . runWriterT) (commandSnake West)  world
+        G.SpecialKey G.KeyUp    -> (liftM (snd . fst . runWriter) . runStateT) (commandSnake North) world
+        G.SpecialKey G.KeyRight -> (liftM (snd . fst . runWriter) . runStateT) (commandSnake East)  world
+        G.SpecialKey G.KeyDown  -> (liftM (snd . fst . runWriter) . runStateT) (commandSnake South) world
+        G.SpecialKey G.KeyLeft  -> (liftM (snd . fst . runWriter) . runStateT) (commandSnake West)  world
         _ -> world
     _ -> world
 

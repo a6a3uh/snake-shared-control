@@ -11,7 +11,7 @@ import Food
 
 -- todo add food move at startup
 
-stepSnake :: WriterT String (State World)  ()
+stepSnake :: StateT World (Writer String) ()
 stepSnake = do
     world <- get
     if world ^. isOver
@@ -29,7 +29,7 @@ gameOver w = let (x:xs) = w ^. snake
                 then w else w & isOver .~ True
                 
 
-moveSnake :: WriterT String (State World)  () -- -> World
+moveSnake :: StateT World (Writer String) ()
 moveSnake = do 
     world <- get
     let (x, y) = head (world ^. snake)
@@ -54,7 +54,7 @@ moveSnake = do
         EQ -> put $ world & snake %~ (\xs -> pos : init xs)
 
           
-commandSnake :: Direction -> WriterT String (State World) () -- -> World
+commandSnake :: Direction -> StateT World (Writer String) ()
 commandSnake dir = do 
     world <- get
     let pr = world ^.. table . traverse . prob

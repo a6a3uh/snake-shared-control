@@ -12,7 +12,7 @@ import Control.Monad.Writer
 
 import World
 
-moveFood :: WriterT String (State World)  ()
+moveFood :: StateT World (Writer String) ()
 moveFood = do
   world <- get
   let (seed, g) = random (world ^. gen)
@@ -25,7 +25,7 @@ moveFood = do
   else let newTable' = newTable & traverse . prob %~ ( / (fromIntegral . length) newTable )
        in put $ world & gen .~ g & table .~ newTable'
 
-eatFood :: WriterT String (State World) Bool
+eatFood :: StateT World (Writer String) Bool
 eatFood  = do
   world <- get
   let rew = world ^? table . traverse . filtered (match world) . reward
