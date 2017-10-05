@@ -32,10 +32,7 @@ handleEvent event = do
         _ -> put gworld
 
 handleGameStep :: Float -> StateT GameWorld (Writer String) () -- GameWorld -> GameWorld
-handleGameStep _time = do
-    gworld <- get
-    -- liftM (\g -> g ^. snakeWorld) 
-    zoom (\w -> gworld & snakeWorld .~ w) stepSnake
+handleGameStep _time = zoom snakeWorld stepSnake
     -- put $ gworld & snakeWorld .~ (liftM (snd . fst . runWriter) . runStateT) stepSnake (gworld ^. snakeWorld)
 
 handleResize :: (Int, Int) -> StateT GameWorld (Writer String) () -- GameWorld -> GameWorld
@@ -46,14 +43,14 @@ handleResize newResolution = do
 handleKey :: G.Key -> G.KeyState -> StateT GameWorld (Writer String) () --World -> World
 handleKey key state' = do
     gworld <- get
-    put $ case state' of
-            G.Down -> case key of
-                G.SpecialKey G.KeyUp    -> (liftM (snd . fst . runWriter) . runStateT) (commandSnake North) gworld
-                G.SpecialKey G.KeyRight -> (liftM (snd . fst . runWriter) . runStateT) (commandSnake East)  gworld
-                G.SpecialKey G.KeyDown  -> (liftM (snd . fst . runWriter) . runStateT) (commandSnake South) gworld
-                G.SpecialKey G.KeyLeft  -> (liftM (snd . fst . runWriter) . runStateT) (commandSnake West)  gworld
-                _ -> gworld
-            _ -> gworld
+    case state' of
+        G.Down -> case key of
+            G.SpecialKey G.KeyUp    -> zoom snakeWorld (commandSnake North) -- (liftM (snd . fst . runWriter) . runStateT) (commandSnake North) gworld
+            G.SpecialKey G.KeyRight -> zoom snakeWorld (commandSnake East) -- (liftM (snd . fst . runWriter) . runStateT) (commandSnake East)  gworld
+            G.SpecialKey G.KeyDown  -> zoom snakeWorld (commandSnake South) -- (liftM (snd . fst . runWriter) . runStateT) (commandSnake South) gworld
+            G.SpecialKey G.KeyLeft  -> zoom snakeWorld (commandSnake West) -- (liftM (snd . fst . runWriter) . runStateT) (commandSnake West)  gworld
+            _ -> put gworld
+        _ -> put gworld
 
 ---------------------------------------
 

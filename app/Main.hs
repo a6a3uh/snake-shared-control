@@ -13,6 +13,8 @@ import Data.Aeson.Types
 -- import Data.Aeson
 import Data.Maybe
 import Control.Lens
+import Control.Monad.State
+import Control.Monad.Writer
 import GHC.Generics
 import World
 
@@ -112,8 +114,8 @@ main = do
                 , _table =  let foods = config ^. food . exact 
                                 foodPlace p x r = NewFood {_place = x, _reward = r, _prob = p}
                             in case foods ^. positions of
-                                []        -> [NewFood {_place = (0, 1), _reward = 0, _prob = 1}]
-                                otherwise -> zipWith (foodPlace ((1 /) . fromIntegral . length $ foods ^. positions))
+                                [] -> [NewFood {_place = (0, 1), _reward = 0, _prob = 1}]
+                                _  -> zipWith (foodPlace ((1 /) . fromIntegral . length $ foods ^. positions))
                                                      (foods ^. positions)
                                                      (foods ^. costs)
                 } 
@@ -126,5 +128,5 @@ main = do
         (config ^. game . rate)
         gworld
         drawWorld
-        handleEvent
-        handleGameStep
+        (liftM (snd . fst . runWriter) . runStateT . handleEvent)
+        (liftM (snd . fst . runWriter) . runStateT . handleGameStep)
