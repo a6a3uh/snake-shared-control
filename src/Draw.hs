@@ -21,30 +21,39 @@ displayMode gworld = G.InWindow "Snake" (gworld ^. resolution) (0, 0)
 
 ---------------------------------------
 
-handleEvent :: G.Event -> GameWorld -> GameWorld
-handleEvent event gworld = case event of
-    G.EventResize newResolution -> handleResize newResolution gworld
-    G.EventKey key state' _ _ -> if world ^. isOver
-        then gworld
-        else gworld & snakeWorld .~ handleKey key state' world
-    _ -> gworld
-    where world = gworld ^. snakeWorld
+handleEvent :: G.Event -> StateT GameWorld (Writer String) () -- GameWorld -> GameWorld
+handleEvent event = do
+    gworld <- get
+    case event of
+        G.EventResize newResolution -> handleResize newResolution
+        G.EventKey key state' _ _ -> if gworld ^. snakeWorld . isOver
+            then put gworld
+            else handleKey key state'
+        _ -> put gworld
 
-handleGameStep :: Float -> GameWorld -> GameWorld
-handleGameStep _time gworld = gworld & snakeWorld .~ (liftM (snd . fst . runWriter) . runStateT) stepSnake (gworld ^. snakeWorld)
+handleGameStep :: Float -> StateT GameWorld (Writer String) () -- GameWorld -> GameWorld
+handleGameStep _time = do
+    gworld <- get
+    -- liftM (\g -> g ^. snakeWorld) 
+    zoom (\w -> gworld & snakeWorld .~ w) stepSnake
+    -- put $ gworld & snakeWorld .~ (liftM (snd . fst . runWriter) . runStateT) stepSnake (gworld ^. snakeWorld)
 
-handleResize :: (Int, Int) -> GameWorld -> GameWorld
-handleResize newResolution gworld = gworld & resolution .~ newResolution
+handleResize :: (Int, Int) -> StateT GameWorld (Writer String) () -- GameWorld -> GameWorld
+handleResize newResolution = do
+    gworld <- get
+    put $ gworld & resolution .~ newResolution
 
-handleKey :: G.Key -> G.KeyState -> World -> World
-handleKey key state' world = case state' of
-    G.Down -> case key of
-        G.SpecialKey G.KeyUp    -> (liftM (snd . fst . runWriter) . runStateT) (commandSnake North) world
-        G.SpecialKey G.KeyRight -> (liftM (snd . fst . runWriter) . runStateT) (commandSnake East)  world
-        G.SpecialKey G.KeyDown  -> (liftM (snd . fst . runWriter) . runStateT) (commandSnake South) world
-        G.SpecialKey G.KeyLeft  -> (liftM (snd . fst . runWriter) . runStateT) (commandSnake West)  world
-        _ -> world
-    _ -> world
+handleKey :: G.Key -> G.KeyState -> StateT GameWorld (Writer String) () --World -> World
+handleKey key state' = do
+    gworld <- get
+    put $ case state' of
+            G.Down -> case key of
+                G.SpecialKey G.KeyUp    -> (liftM (snd . fst . runWriter) . runStateT) (commandSnake North) gworld
+                G.SpecialKey G.KeyRight -> (liftM (snd . fst . runWriter) . runStateT) (commandSnake East)  gworld
+                G.SpecialKey G.KeyDown  -> (liftM (snd . fst . runWriter) . runStateT) (commandSnake South) gworld
+                G.SpecialKey G.KeyLeft  -> (liftM (snd . fst . runWriter) . runStateT) (commandSnake West)  gworld
+                _ -> gworld
+            _ -> gworld
 
 ---------------------------------------
 

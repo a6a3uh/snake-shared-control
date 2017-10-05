@@ -1,0 +1,46 @@
+[21:17:39]  <ski>	@type let (f ~> g) h = g . h . f in \f g -> (runStateT ~> StateT) (f ~> (fmap . fmap) g)  -- a6a3uh
+[21:17:41]  <lambdabot>	Functor m => (s -> a1) -> (a1 -> s) -> StateT a1 m a2 -> StateT s m a2
+
+[21:20:46]  <ski>	a6a3uh : `infixr 1 ~>', i think is reasonable
+
+[21:19:19]  <ski>	@where SEC
+[21:19:20]  <lambdabot>	http://conal.net/blog/posts/semantic-editor-combinators/
+[21:19:22]  <ski>	a6a3uh ^
+
+[21:22:32]  <ski>	@where TV
+[21:22:32]  <lambdabot>	http://www.haskell.org/haskellwiki/TV
+[21:22:48]  <ski>	a6a3uh : that ^ has a few more examples of SEC
+
+[21:23:00]  <ski>	oh, and the type signature is
+[21:23:17]  <ski>	  (~>) :: (a1 -> a0) -> (b0 -> b1) -> ((a0 -> b0) -> (a1 -> b1))
+[21:23:45]  <ski>	also
+[21:24:04]  <ski>	  argument :: (a1 -> a0) -> ((a0 -> b) -> (a1 -> b))
+[21:24:11]  <ski>	  argument f = f ~> id
+[21:24:24]  <ski>	  result :: (b0 -> b1) -> ((a -> b0) -> (a -> b1))
+[21:24:31]  <ski>	  result g = id ~> g
+
+[21:26:17]  <ski>	one can use a composition chain of functions like `argument',`result',`map',`fmap',`onLines',`perLine',`onWords',`perWord',&c. to specify a path (in terms of the types) to a "component" of the structure
+
+[21:26:50]  <ski>	then that is applied to the function that one'd like to apply at that "spot", and then the structure to traverse using the path, preserving the rest of the structure
+
+[21:29:31]  <ski>	@let onWords = words ~> unwords; onLines = lines ~> unlines; perWord = onWords . map; perLine = onLines . map
+
+[21:30:54]  <ski>	@type res . res . arg . map . first
+[21:30:55]  <lambdabot>	(b1 -> c) -> (a1 -> a2 -> [(c, d)] -> b2) -> a1 -> a2 -> [(b1, d)] -> b2
+[21:31:32]  <ski>	here the first components of the pairs in the list, being the third argument, are being changed
+
+[21:35:40]  <ski>	> perLine reverse "Rats live on no evil star.\n God, a red nugget! A fat egg under a dog!\n"
+[21:35:43]  <lambdabot>	 ".rats live on no evil staR\n!god a rednu gge taf A !teggun der a ,doG \n"
+
+[21:37:32]  <ski>	(it's not that hard to go overboard with pointless code)
+
+[21:56:01]  <a6a3uh>	ski: will this work as well? zoom :: Monad m => LensLike' (Zooming m c) a b -> StateT b m c -> StateT a m c
+[22:00:13]  <a6a3uh>	ski: in particular: zoom :: Monad m => Traversal' a b -> StateT b m () -> StateT a m () -- ski
+[22:11:31]  <ski>	a6a3uh : looks like it
+[22:12:12]  <a6a3uh>	ski: I'm just struggling to get right Traversal now :)
+
+[22:51:59]  <ski>	> perLine (concat . uncurry (/\/) . (first . onUnsplitLengths . const) reverse . (wordsBy (not . isLetter) &&& wordsBy isLetter)) "Eva, can I stab bats in a cave?\nWas it a rat I saw ?\n"  -- a6a3uh, only reversing the letters
+[22:52:02]  <lambdabot>	 "eva, can i stab bats In a cavE?\nwas It a rat i saW ?\n"
+
+[22:53:08]  <ski>	@where HPFFP
+[22:53:09]  <lambdabot>	"Haskell Programming: from first principles - Pure functional programming without fear or frustration" by Chistopher Allen (bitemyapp),Julie Moronuki at <http://haskellbook.com/>,#haskell-beginners
