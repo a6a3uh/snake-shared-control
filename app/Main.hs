@@ -127,7 +127,12 @@ main = do
                     gworld
                     (return . drawWorld)
                     
-    let unwrap = fmap (snd . fst . runWriter) . runStateT
+    play'   (handler handleEvent)
+            (handler handleGameStep)
 
-    play'   (\e -> return . (unwrap . handleEvent) e)
-            (\k -> return . (unwrap . handleGameStep) k)
+
+handler :: (a -> StateT GameWorld (Writer String) ()) -> a -> GameWorld -> IO GameWorld
+handler h e w = do
+    let ((_, w'), txt) = runWriter $ runStateT (h e) w
+    putStr txt
+    return w'

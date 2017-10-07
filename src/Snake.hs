@@ -5,7 +5,7 @@ import Control.Monad.State
 import Control.Monad.Writer
 import Data.Maybe
 import Data.List
-import Control.Arrow
+-- import Control.Arrow
 import Markov
 import World
 import Food
