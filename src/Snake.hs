@@ -5,6 +5,7 @@ import Control.Monad.State
 import Control.Monad.Writer
 import Data.Maybe
 import Data.List
+import Control.Arrow
 import Markov
 import World
 import Food
@@ -27,7 +28,9 @@ gameOver w = let (x:xs) = w ^. snake
              in if    inBounds x           -- inside world
                    && (x `notElem` xs)         -- not eaten itself
                 then w else w & isOver .~ True
-                
+      
+-- moves :: [(Int, Int) -> (Int, Int)] 
+-- moves = [((-) 1) *** id, (+ 1) *** id, id *** ((-) 1), id *** (+ 1)]
 
 moveSnake :: StateT World (Writer String) ()
 moveSnake = do 
@@ -37,11 +40,12 @@ moveSnake = do
         pr      = world ^.. table . traverse . prob
         costs   = markovOut (x, y) ps pr
         pos = newpos $ minPossibleIndex (world ^. snake) costs 
-        newpos a = case a of 
-            0 -> (x - 1, y)
-            1 -> (x + 1, y)
-            2 -> (x, y - 1)
-            3 -> (x, y + 1)
+        newpos a = case a of --(moves !! a) (x, y)
+            0 -> (x-1, y)
+            1 -> (x+1, y)
+            2 -> (x, y-1)
+            3 -> (x, y+1)
+            
         minPossibleIndex xs cs =    let minIndex ys = fromJust $ elemIndex (minimum ys) ys
                                         i = minIndex cs 
                                     in  if newpos i `notElem` xs || cs !! i == 1000000000
@@ -52,7 +56,6 @@ moveSnake = do
         LT -> put $ world & snake %~ init   & stomack %~ succ -- check for init of empty list !!!
         GT -> put $ world & snake %~ (pos:) & stomack %~ pred
         EQ -> put $ world & snake %~ (\xs -> pos : init xs)
-
           
 commandSnake :: Direction -> StateT World (Writer String) ()
 commandSnake dir = do 

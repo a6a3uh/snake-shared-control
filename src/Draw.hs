@@ -21,7 +21,7 @@ displayMode gworld = G.InWindow "Snake" (gworld ^. resolution) (0, 0)
 
 ---------------------------------------
 
-handleEvent :: G.Event -> StateT GameWorld (Writer String) () -- GameWorld -> GameWorld
+handleEvent :: G.Event -> StateT GameWorld (Writer String) ()
 handleEvent event = do
     gworld <- get
     case event of
@@ -31,24 +31,21 @@ handleEvent event = do
             else handleKey key state'
         _ -> put gworld
 
-handleGameStep :: Float -> StateT GameWorld (Writer String) () -- GameWorld -> GameWorld
+handleGameStep :: Float -> StateT GameWorld (Writer String) ()
 handleGameStep _time = zoom snakeWorld stepSnake
-    -- put $ gworld & snakeWorld .~ (liftM (snd . fst . runWriter) . runStateT) stepSnake (gworld ^. snakeWorld)
 
-handleResize :: (Int, Int) -> StateT GameWorld (Writer String) () -- GameWorld -> GameWorld
-handleResize newResolution = do
-    gworld <- get
-    put $ gworld & resolution .~ newResolution
+handleResize :: (Int, Int) -> StateT GameWorld (Writer String) ()
+handleResize newResolution = modify (& resolution .~ newResolution)
 
-handleKey :: G.Key -> G.KeyState -> StateT GameWorld (Writer String) () --World -> World
+handleKey :: G.Key -> G.KeyState -> StateT GameWorld (Writer String) ()
 handleKey key state' = do
     gworld <- get
     case state' of
         G.Down -> case key of
-            G.SpecialKey G.KeyUp    -> zoom snakeWorld (commandSnake North) -- (liftM (snd . fst . runWriter) . runStateT) (commandSnake North) gworld
-            G.SpecialKey G.KeyRight -> zoom snakeWorld (commandSnake East) -- (liftM (snd . fst . runWriter) . runStateT) (commandSnake East)  gworld
-            G.SpecialKey G.KeyDown  -> zoom snakeWorld (commandSnake South) -- (liftM (snd . fst . runWriter) . runStateT) (commandSnake South) gworld
-            G.SpecialKey G.KeyLeft  -> zoom snakeWorld (commandSnake West) -- (liftM (snd . fst . runWriter) . runStateT) (commandSnake West)  gworld
+            G.SpecialKey G.KeyUp    -> zoom snakeWorld (commandSnake North)
+            G.SpecialKey G.KeyRight -> zoom snakeWorld (commandSnake East)
+            G.SpecialKey G.KeyDown  -> zoom snakeWorld (commandSnake South)
+            G.SpecialKey G.KeyLeft  -> zoom snakeWorld (commandSnake West)
             _ -> put gworld
         _ -> put gworld
 

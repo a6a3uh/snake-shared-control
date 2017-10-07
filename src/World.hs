@@ -61,16 +61,6 @@ settings = NewSettings
     , worldScale = 15
     }
 
-initialWorld :: Int -> World
-initialWorld seed = NewWorld
-    { _direction = North
-    , _snake = [(0, 2), (0, 1), (0, 0), (0, (-1)), (0, (-2))]
-    , _stomack = 0
-    , _isOver = False
-    , _gen = mkStdGen seed
-    , _table = [NewFood {_place = (0, 3), _reward = 0, _prob = 1}]
-    }
-
 inBounds :: Pos -> Bool
 inBounds (x, y) =
     let s = worldScale settings `div` 2
