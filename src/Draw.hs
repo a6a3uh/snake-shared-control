@@ -5,6 +5,7 @@ module Draw where
 import qualified Graphics.Gloss.Interface.Pure.Game as G
 import Control.Lens
 import Control.Monad.State
+import Control.Monad.Writer
 import Snake
 import World
 
@@ -20,30 +21,33 @@ displayMode gworld = G.InWindow "Snake" (gworld ^. resolution) (0, 0)
 
 ---------------------------------------
 
-handleEvent :: G.Event -> GameWorld -> GameWorld
-handleEvent event gworld = case event of
-    G.EventResize newResolution -> handleResize newResolution gworld
-    G.EventKey key state' _ _ -> if world ^. isOver
-        then gworld
-        else gworld & snakeWorld .~ handleKey key state' world
-    _ -> gworld
-    where world = gworld ^. snakeWorld
+handleEvent :: G.Event -> StateT GameWorld (Writer String) ()
+handleEvent event = do
+    gworld <- get
+    case event of
+        G.EventResize newResolution -> handleResize newResolution
+        G.EventKey key state' _ _ -> if gworld ^. snakeWorld . isOver
+            then put gworld
+            else handleKey key state'
+        _ -> put gworld
 
-handleGameStep :: Float -> GameWorld -> GameWorld
-handleGameStep _time gworld = gworld & snakeWorld .~ execState stepSnake (gworld ^. snakeWorld)
+handleGameStep :: Float -> StateT GameWorld (Writer String) ()
+handleGameStep _time = zoom snakeWorld stepSnake
 
-handleResize :: (Int, Int) -> GameWorld -> GameWorld
-handleResize newResolution gworld = gworld & resolution .~ newResolution
+handleResize :: (Int, Int) -> StateT GameWorld (Writer String) ()
+handleResize newResolution = modify (& resolution .~ newResolution)
 
-handleKey :: G.Key -> G.KeyState -> World -> World
-handleKey key state' world = case state' of
-    G.Down -> case key of
-        G.SpecialKey G.KeyUp    -> commandSnake North world
-        G.SpecialKey G.KeyRight -> commandSnake East  world
-        G.SpecialKey G.KeyDown  -> commandSnake South world
-        G.SpecialKey G.KeyLeft  -> commandSnake West  world
-        _ -> world
-    _ -> world
+handleKey :: G.Key -> G.KeyState -> StateT GameWorld (Writer String) ()
+handleKey key state' = do
+    gworld <- get
+    case state' of
+        G.Down -> case key of
+            G.SpecialKey G.KeyUp    -> zoom snakeWorld (commandSnake North)
+            G.SpecialKey G.KeyRight -> zoom snakeWorld (commandSnake East)
+            G.SpecialKey G.KeyDown  -> zoom snakeWorld (commandSnake South)
+            G.SpecialKey G.KeyLeft  -> zoom snakeWorld (commandSnake West)
+            _ -> put gworld
+        _ -> put gworld
 
 ---------------------------------------
 
