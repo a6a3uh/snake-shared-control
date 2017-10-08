@@ -16,19 +16,26 @@ moveFood :: StateT World (Writer String) ()
 moveFood = do
   world <- get
   let (seed, g) = random (world ^. gen)
-  let newTable = unGen arbitrary (mkQCGen seed) (snd . numFoodBounds $ settings)
-  let places = newTable ^.. traverse . place
+      newTable = unGen arbitrary (mkQCGen seed) (snd . numFoodBounds $ settings)
+      places = newTable ^.. traverse . place
+  
   if  (length newTable < (fst . numFoodBounds) settings)    -- num of foods too small
     || length (unique places) /= length places              -- several foods at same place
   then do modify (& gen .~ g)
           moveFood
-  else let newTable' = newTable & traverse . prob %~ ( / (fromIntegral . length) newTable )
-       in put $ world & gen .~ g & table .~ newTable'
+  else do let newTable' = newTable & traverse . prob %~ ( / (fromIntegral . length) newTable )
+          tell $ "FOOD> new positions: " ++ (show $ newTable' ^.. traverse. place) ++ "\n"
+          put $ world & gen .~ g & table .~ newTable'
+
 
 eatFood :: StateT World (Writer String) Bool
 eatFood  = do
   world <- get
   let rew = world ^? table . traverse . filtered (match world) . reward
   modify (& stomack %~ (+ fromMaybe 0 rew))
-  return $ isJust rew
+  if (isJust rew) 
+  then do
+    tell $ "FOOD> eaten!\n"
+    return True
+  else return False
   where match w fd = fd ^. place == head (w ^. snake)

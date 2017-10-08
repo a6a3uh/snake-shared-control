@@ -56,19 +56,23 @@ moveSnake = do
         LT -> put $ world & snake %~ init   & stomack %~ succ -- check for init of empty list !!!
         GT -> put $ world & snake %~ (pos:) & stomack %~ pred
         EQ -> put $ world & snake %~ (\xs -> pos : init xs)
+
+    tell $ "STEP> head: " ++ show (head $ world ^. snake) ++ "; costs: " ++ show costs ++ "\n"
           
 commandSnake :: Direction -> StateT World (Writer String) ()
 commandSnake dir = do 
     world <- get
+
     let pr = world ^.. table . traverse . prob
         ps = world ^.. table . traverse . place
         p  =  head $ world ^. snake
         newProbs = markovIn p ps pr (fromEnum dir)
         changeProbs foods = fmap (\(a, p') -> a & prob .~ p') $ zipWith (,) foods newProbs
-    tell "blah"
+    
     put $ world & table . traverse . reward %~ pred 
                 & table %~ changeProbs
 
+    tell $ "COMMAND> " ++ show dir ++ "; " ++ "probabilities: " ++ (show $ world ^.. table . traverse . prob) ++ "\n"
                                   
 --     commandSnake' dir $ over (table . traverse . reward) pred world
 --   where commandSnake' North = over direction (\d -> if d == South then South else North)

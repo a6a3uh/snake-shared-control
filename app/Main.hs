@@ -1,9 +1,10 @@
-{-# LANGUAGE TemplateHaskell, OverloadedStrings, DeriveGeneric, DeriveAnyClass #-}
+{-# LANGUAGE TemplateHaskell, OverloadedStrings, DeriveGeneric, DeriveAnyClass, TypeApplications, DataKinds #-}
 
 module Main (main) where
 
-import Graphics.Gloss.Interface.Pure.Game
+-- import Graphics.Gloss.Interface.Pure.Game
 import Graphics.Gloss.Interface.IO.Game
+import Graphics.Gloss.Interface.Pure.Game
 import System.Random
 -- import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
@@ -16,6 +17,8 @@ import Data.Maybe
 import Control.Lens
 import Control.Monad.State
 import Control.Monad.Writer
+import System.IO
+import System.Exit
 import GHC.Generics
 import World
 import Draw
@@ -126,13 +129,36 @@ main = do
                     (config ^. game . rate)
                     gworld
                     (return . drawWorld)
+
+    outh <- openFile "output.txt" WriteMode
                     
-    play'   (handler handleEvent)
-            (handler handleGameStep)
+    play'   (handlerE outh handleEvent)
+            (handler  outh handleStep)
 
+    hClose outh
 
-handler :: (a -> StateT GameWorld (Writer String) ()) -> a -> GameWorld -> IO GameWorld
-handler h e w = do
-    let ((_, w'), txt) = runWriter $ runStateT (h e) w
-    putStr txt
+handlerE :: Handle -> (Event -> StateT GameWorld (Writer String) ()) -> Event -> GameWorld -> IO GameWorld
+handlerE h f e w = do
+    case e of 
+        EventKey key state' _ _ -> case state' of
+            Down -> case key of
+                SpecialKey KeyEsc -> do 
+                    hClose h
+                    System.Exit.exitSuccess
+                _ -> handler h f e w
+            _ -> handler h f e w
+        _ -> handler h f e w
+
+    -- if e ^? _Ctor @"EventKey" . getField @"Key" . _Ctor @"SpecialKey" == Just KeyEsc
+    -- then System.Exit.exitSuccess
+    -- else
+    --      handler h f e w
+
+handler :: Handle -> (a -> StateT GameWorld (Writer String) ()) -> a -> GameWorld -> IO GameWorld
+handler h f e w = do
+    let ((_, w'), txt) = runWriter $ runStateT (f e) w
+    case txt of
+        [] -> return ()
+        _  -> do hPutStrLn h txt
+                 putStrLn txt
     return w'

@@ -2,7 +2,7 @@
 
 module Draw where
 
-import qualified Graphics.Gloss.Interface.Pure.Game as G
+import Graphics.Gloss.Interface.Pure.Game
 import Control.Lens
 import Control.Monad.State
 import Control.Monad.Writer
@@ -16,97 +16,97 @@ data GameWorld = NewGameWorld
 
 makeLenses ''GameWorld
 
-displayMode :: GameWorld -> G.Display
-displayMode gworld = G.InWindow "Snake" (gworld ^. resolution) (0, 0)
+displayMode :: GameWorld -> Display
+displayMode gworld = InWindow "Snake" (gworld ^. resolution) (0, 0)
 
 ---------------------------------------
 
-handleEvent :: G.Event -> StateT GameWorld (Writer String) ()
+handleEvent :: Event -> StateT GameWorld (Writer String) ()
 handleEvent event = do
     gworld <- get
     case event of
-        G.EventResize newResolution -> handleResize newResolution
-        G.EventKey key state' _ _ -> if gworld ^. snakeWorld . isOver
+        EventResize newResolution   -> handleResize newResolution
+        EventKey key state' _ _     -> if gworld ^. snakeWorld . isOver
             then put gworld
             else handleKey key state'
         _ -> put gworld
 
-handleGameStep :: Float -> StateT GameWorld (Writer String) ()
-handleGameStep _time = zoom snakeWorld stepSnake
+handleStep :: Float -> StateT GameWorld (Writer String) ()
+handleStep _time = zoom snakeWorld stepSnake
 
 handleResize :: (Int, Int) -> StateT GameWorld (Writer String) ()
 handleResize newResolution = modify (& resolution .~ newResolution)
 
-handleKey :: G.Key -> G.KeyState -> StateT GameWorld (Writer String) ()
+handleKey :: Key -> KeyState -> StateT GameWorld (Writer String) ()
 handleKey key state' = do
     gworld <- get
     case state' of
-        G.Down -> case key of
-            G.SpecialKey G.KeyUp    -> zoom snakeWorld (commandSnake North)
-            G.SpecialKey G.KeyRight -> zoom snakeWorld (commandSnake East)
-            G.SpecialKey G.KeyDown  -> zoom snakeWorld (commandSnake South)
-            G.SpecialKey G.KeyLeft  -> zoom snakeWorld (commandSnake West)
+        Down -> case key of
+            SpecialKey KeyUp    -> zoom snakeWorld (commandSnake North)
+            SpecialKey KeyRight -> zoom snakeWorld (commandSnake East)
+            SpecialKey KeyDown  -> zoom snakeWorld (commandSnake South)
+            SpecialKey KeyLeft  -> zoom snakeWorld (commandSnake West)
             _ -> put gworld
         _ -> put gworld
 
 ---------------------------------------
 
-drawWorld :: GameWorld -> G.Picture
-drawWorld gworld = G.pictures
+drawWorld :: GameWorld -> Picture
+drawWorld gworld = pictures
     [ drawBounds gworld
     , drawTable gworld
     , drawSnake gworld
     , drawGameOver gworld
     ]
 
-drawBounds :: GameWorld -> G.Picture
-drawBounds gworld = G.rectangleWire x x
+drawBounds :: GameWorld -> Picture
+drawBounds gworld = rectangleWire x x
     where x = size gworld + 1
 
-drawSnake :: GameWorld -> G.Picture
+drawSnake :: GameWorld -> Picture
 drawSnake gworld = case gworld ^. snakeWorld . snake of
-    (p : ps) -> G.pictures
-        ( G.color G.orange (drawBox gworld p)
+    (p : ps) -> pictures
+        ( color orange (drawBox gworld p)
         : map (drawBox gworld) ps
         )
-    _        -> G.blank
+    _        -> blank
 
-drawTable :: GameWorld -> G.Picture
-drawTable gworld = G.color G.green $ mconcat foodPictures
+drawTable :: GameWorld -> Picture
+drawTable gworld = color green $ mconcat foodPictures
   where foodPictures = drawFood gworld <$> gworld ^. snakeWorld . table
 
-drawFood :: GameWorld -> Food -> G.Picture
+drawFood :: GameWorld -> Food -> Picture
 drawFood gworld food = let box = drawBox gworld (food ^. place)
                            txt = drawText food gworld (food ^. place) --G.color G.red (G.scale 0.2 0.2 (G.text $ (show . reward . apples) world))
                        in mappend box txt
 
-drawBox :: GameWorld -> Pos -> G.Picture
-drawBox gworld = drawPos (G.rectangleUpperSolid s s) gworld
+drawBox :: GameWorld -> Pos -> Picture
+drawBox gworld = drawPos (rectangleUpperSolid s s) gworld
     where s = size gworld / fromIntegral (worldScale settings) - 2
 
-drawText :: Food -> GameWorld -> Pos -> G.Picture
-drawText food = drawPos (G.color G.red (G.scale 0.1 0.1 (G.text . show $ food ^. reward)))
+drawText :: Food -> GameWorld -> Pos -> Picture
+drawText food = drawPos (color red (scale 0.1 0.1 (text . show $ food ^. reward)))
 
-drawPos :: G.Picture -> GameWorld -> Pos -> G.Picture
+drawPos :: Picture -> GameWorld -> Pos -> Picture
 drawPos pic gworld (x, y) =
     let s = size gworld / fromIntegral (worldScale settings)
         x' = s * fromIntegral x
         y' = s * fromIntegral y
-    in  G.translate x' y' pic
+    in  translate x' y' pic
 
-drawGameOver :: GameWorld -> G.Picture
+drawGameOver :: GameWorld -> Picture
 drawGameOver gworld = if world ^. isOver
-    then G.pictures
-        [ G.color G.red (G.scale 0.2 0.2 (G.text "game over"))
-        , G.color G.blue (G.translate 0 (-50) (G.scale 0.2 0.2 (G.text ("score: " ++ show (length (world ^. snake))))))
+    then pictures
+        [ color red (scale 0.2 0.2 (text "game over"))
+        , color blue (translate 0 (-50) (scale 0.2 0.2 (text ("score: " ++ show (length (world ^. snake))))))
         ]
-    else G.blank
+    else blank
     where world = gworld ^. snakeWorld
 
 ---------------------------------------
 
-backgroundColor :: G.Color
-backgroundColor = G.white
+backgroundColor :: Color
+backgroundColor = white
 
 size :: (Num a) => GameWorld -> a
 size gworld =

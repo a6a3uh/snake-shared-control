@@ -20,9 +20,7 @@ data Direction
     = West
     | East
     | South
-    | North
-    
-    deriving (Bounded, Enum, Eq, Ord, Read, Show)
+    | North  deriving (Bounded, Enum, Eq, Ord, Read, Show)
 
 data World = NewWorld
     { _direction :: Direction
