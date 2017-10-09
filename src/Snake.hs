@@ -56,6 +56,8 @@ moveSnake = do
         LT -> put $ world & snake %~ init   & stomack %~ succ -- check for init of empty list !!!
         GT -> put $ world & snake %~ (pos:) & stomack %~ pred
         EQ -> put $ world & snake %~ (\xs -> pos : init xs)
+    
+    world <- get
 
     tell $ "STEP> head: " ++ show (head $ world ^. snake) ++ "; costs: " ++ show costs ++ "\n"
           
@@ -71,6 +73,8 @@ commandSnake dir = do
     
     put $ world & table . traverse . reward %~ pred 
                 & table %~ changeProbs
+
+    world <- get
 
     tell $ "COMMAND> " ++ show dir ++ "; " ++ "probabilities: " ++ (show $ world ^.. table . traverse . prob) ++ "\n"
                                   

@@ -3,14 +3,14 @@ game:
   direct: False           # if true then direct control otherwise control through Markov inference  !!!NOT IMPLEMENTED YET!!!
   cross: True             # allow snake to cross itself (no restricted states)                      !!!NOT IMPLEMENTED YET!!!
   steps: 0                # max steps for dynamic prg. 0 is for unlimited search                    !!!NOT IMPLEMENTED YET!!!
-  rate: 5                 # steps per second                                                        !!!NOT IMPLEMENTED YET!!!
+  rate: 5                 # steps per second 
   dimentions: [15, 15]    # world size                                                              !!!NOT IMPLEMENTED YET!!!
   pixels: [400, 400]      # initial resolution of the world in pixels (window could be resized)
   cost: 
     function: sigmoid     # linear=abs(x)+abs(y), sqrt=sqrt(linear) or sigmoid=sigmoid(linear)      !!!NOT IMPLEMENTED YET!!!
     scale: 1              # scale for cost (cost = s * cost)                                        !!!NOT IMPLEMENTED YET!!!
 snake:
-  size: 5                # initial length of the snake
+  size: 5                 # initial length of the snake
   position: [0, 0]        # initial position of the snake 
 food:
   number: [2, 5]                         # range of foods number generated randomly                 !!!NOT IMPLEMENTED YET!!!
