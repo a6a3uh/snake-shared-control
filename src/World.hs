@@ -6,7 +6,13 @@ import Test.QuickCheck.Arbitrary
 import Test.QuickCheck.Gen
 import System.Random
 import Control.Lens
+import Control.Monad.Reader
+import Control.Monad.Writer
+import Control.Monad.State
 -- import qualified Data.MemoCombinators as Memo
+
+type Game g r w = StateT g (ReaderT r (Writer w))
+type Log = String
 
 data Settings = NewSettings
     { numFoodBounds :: (Int, Int)

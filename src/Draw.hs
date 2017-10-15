@@ -6,6 +6,7 @@ import Graphics.Gloss.Interface.Pure.Game
 import Control.Lens
 import Control.Monad.State
 import Control.Monad.Writer
+import Control.Monad.Reader
 import Snake
 import World
 
@@ -21,7 +22,7 @@ displayMode gworld = InWindow "Snake" (gworld ^. resolution) (0, 0)
 
 ---------------------------------------
 
-handleEvent :: Event -> StateT GameWorld (Writer String) ()
+handleEvent :: Event -> Game GameWorld a Log () --StateT GameWorld (ReaderT a (Writer String)) ()
 handleEvent event = do
     gworld <- get
     case event of
@@ -31,13 +32,13 @@ handleEvent event = do
             else handleKey key state'
         _ -> put gworld
 
-handleStep :: Float -> StateT GameWorld (Writer String) ()
+handleStep :: Float -> Game GameWorld a Log () --StateT GameWorld (ReaderT a (Writer String)) ()
 handleStep _time = zoom snakeWorld stepSnake
 
-handleResize :: (Int, Int) -> StateT GameWorld (Writer String) ()
+handleResize :: (Int, Int) -> Game GameWorld a Log () --StateT GameWorld (ReaderT a (Writer String)) ()
 handleResize newResolution = modify (& resolution .~ newResolution)
 
-handleKey :: Key -> KeyState -> StateT GameWorld (Writer String) ()
+handleKey :: Key -> KeyState -> Game GameWorld a Log () --StateT GameWorld (ReaderT a (Writer String)) ()
 handleKey key state' = do
     gworld <- get
     case state' of

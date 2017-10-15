@@ -17,6 +17,7 @@ import Data.Maybe
 import Control.Lens
 import Control.Monad.State
 import Control.Monad.Writer
+import Control.Monad.Reader
 import System.IO
 import System.Exit
 import GHC.Generics
@@ -137,7 +138,7 @@ main = do
 
     hClose outh
 
-handlerE :: Handle -> (Event -> StateT GameWorld (Writer String) ()) -> Event -> GameWorld -> IO GameWorld
+handlerE :: (Num b) => Handle -> (Event -> Game GameWorld b Log ()) -> Event -> GameWorld -> IO GameWorld
 handlerE h f e w = do
     case e of 
         EventKey key state' _ _ -> case state' of
@@ -154,9 +155,9 @@ handlerE h f e w = do
     -- else
     --      handler h f e w
 
-handler :: Handle -> (a -> StateT GameWorld (Writer String) ()) -> a -> GameWorld -> IO GameWorld
+handler :: (Num b) => Handle -> (e -> Game GameWorld b Log ()) -> e -> GameWorld -> IO GameWorld
 handler h f e w = do
-    let ((_, w'), txt) = runWriter $ runStateT (f e) w
+    let ((_, w'), txt) = runWriter $ (flip runReaderT 0) $ (runStateT (f e) w)
     case txt of
         [] -> return ()
         _  -> do hPutStrLn h txt

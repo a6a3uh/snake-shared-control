@@ -6,7 +6,7 @@ homepage:            https://github.com/a6a3uh/snake-shared-control#readme
 license:             BSD3
 license-file:        LICENSE
 author:              Ali Tlisov
-maintainer:          alli.tlisov@gmail.com
+maintainer:          ali.tlisov@gmail.com
 copyright:           2017 Ali Tlisov
 category:            Web
 build-type:          Simple

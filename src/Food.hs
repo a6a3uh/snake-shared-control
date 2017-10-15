@@ -9,10 +9,11 @@ import Control.Lens
 import Data.Maybe
 import Control.Monad.State
 import Control.Monad.Writer
+import Control.Monad.Reader
 
 import World
 
-moveFood :: StateT World (Writer String) ()
+moveFood :: Game World a Log () -- StateT World (ReaderT a (Writer String)) ()
 moveFood = do
   world <- get
   let (seed, g) = random (world ^. gen)
@@ -28,7 +29,7 @@ moveFood = do
           put $ world & gen .~ g & table .~ newTable'
 
 
-eatFood :: StateT World (Writer String) Bool
+eatFood :: Game World a Log Bool --StateT World (ReaderT a (Writer String)) Bool
 eatFood  = do
   world <- get
   let rew = world ^? table . traverse . filtered (match world) . reward

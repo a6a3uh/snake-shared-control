@@ -3,6 +3,7 @@ module Snake (stepSnake, commandSnake) where
 import Control.Lens
 import Control.Monad.State
 import Control.Monad.Writer
+import Control.Monad.Reader
 import Data.Maybe
 import Data.List
 -- import Control.Arrow
@@ -12,7 +13,7 @@ import Food
 
 -- todo add food move at startup
 
-stepSnake :: StateT World (Writer String) ()
+stepSnake :: Game World a Log ()--StateT World (ReaderT a (Writer String)) ()
 stepSnake = do
     world <- get
     if world ^. isOver
@@ -32,7 +33,7 @@ gameOver w = let (x:xs) = w ^. snake
 -- moves :: [(Int, Int) -> (Int, Int)] 
 -- moves = [((-) 1) *** id, (+ 1) *** id, id *** ((-) 1), id *** (+ 1)]
 
-moveSnake :: StateT World (Writer String) ()
+moveSnake :: Game World a Log () --StateT World (ReaderT a (Writer String)) ()
 moveSnake = do 
     world <- get
     let (x, y) = head (world ^. snake)
@@ -61,7 +62,7 @@ moveSnake = do
 
     tell $ "STEP> head: " ++ show (head $ world ^. snake) ++ "; costs: " ++ show costs ++ "\n"
           
-commandSnake :: Direction -> StateT World (Writer String) ()
+commandSnake :: Direction -> Game World a Log ()--StateT World (ReaderT a (Writer String)) ()
 commandSnake dir = do 
     world <- get
 
