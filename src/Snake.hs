@@ -12,14 +12,14 @@ import Food
 
 -- todo add food move at startup
 
-stepSnake :: Game World Settings1 Log ()
+stepSnake :: Game World Settings Log ()
 stepSnake = do
     world <- get
     if world ^. isOver
     then return ()
     else stepWorld
 
-stepWorld :: Game World Settings1 Log ()
+stepWorld :: Game World Settings Log ()
 stepWorld = do 
     world <- get
     conf <- ask
@@ -33,16 +33,22 @@ stepWorld = do
     then moveFood
     else gameOver
 
-gameOver :: Game World Settings1 Log () --World -> World
+gameOver :: Game World Settings Log ()
 gameOver = do
     world <- get
     conf <- ask
     let (x:xs) = world ^. snake
-    if inBounds x           -- inside world
-        && ((x `notElem` xs) || conf ^. game . cross)         -- not eaten itself
+    if inBounds (conf ^. game . dimentions) x                   -- inside world
+        && ((x `notElem` xs) || conf ^. game . cross)           -- not eaten itself
     then return ()
     else put $ world & isOver .~ True
-      
+
+inBounds :: (Int, Int) -> Pos -> Bool
+inBounds (xm, ym) (x, y) =
+    let xms = xm `div` 2
+        yms = ym `div` 2
+    in  -xms <= x && x <= xms && -yms <= y && y <= yms
+
 moves :: Int -> Int -> [(Int, Int)]
 moves x y = [(x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)]
 
@@ -59,7 +65,7 @@ moveSnake d = do
     tell $ "STEP> head: " ++ show (head $ world' ^. snake) ++ "\n"
 
 
-dirMarkov :: Game World Settings1 Log Direction
+dirMarkov :: Game World Settings Log Direction
 dirMarkov = do 
     world <- get
     conf <- ask
@@ -82,7 +88,7 @@ dirMarkov = do
     return $ minPossibleIndex (world ^. snake) costs' 
 
 
-commandMarkov :: Direction -> Game World Settings1 Log ()
+commandMarkov :: Direction -> Game World Settings Log ()
 commandMarkov dir = do 
     world <- get
 
@@ -99,7 +105,7 @@ commandMarkov dir = do
 
     tell $ "COMMAND> " ++ show dir ++ "; " ++ "probabilities: " ++ (show $ world' ^.. table . traverse . prob) ++ "\n"
 
-commandSnake :: Direction -> Game World Settings1 Log ()
+commandSnake :: Direction -> Game World Settings Log ()
 commandSnake dir = do 
     world <- get
     put $ commandSnake' dir $ over (table . traverse . reward) pred world

@@ -10,26 +10,37 @@ import Data.Maybe
 import Control.Monad.State
 import Control.Monad.Writer
 import Control.Monad.Reader
+-- import System.Random
+import Control.Monad.Random
 
 import World
 
-moveFood :: Game World a Log ()
+randomTable :: (RandomGen g) => (Int, Int) -> (Int, Int) -> (Int, Int) -> Rand g [Food]
+randomTable dims rews nums = do
+  let rewardFoods = getRandomR rews
+      pos n = let n' = n `div` 2 in getRandomR (-n', n')
+      posFoods = liftM2 (,) (pos $ fst dims) (pos $ snd dims)  
+  numderFoods <- getRandomR nums
+  rewards <- sequence $ replicate numderFoods rewardFoods
+  places <- sequence $ replicate numderFoods posFoods
+  if length (unique places) /= length places
+  then randomTable dims rews nums
+  else return $ (zipWith NewFood places rewards) <*> [1 / fromIntegral numderFoods]
+
+moveFood :: Game World Settings Log ()
 moveFood = do
   world <- get
-  let (seed, g) = random (world ^. gen)
-      newTable = unGen arbitrary (mkQCGen seed) (snd . numFoodBounds $ settings)
-      places = newTable ^.. traverse . place
+  conf <- ask
+  let dims = conf ^. game . dimentions
+      rews = conf ^. food . rewards
+      nums = conf ^. food . number
+      (newTable, g) = runRand (randomTable dims rews nums) (world ^. gen) 
   
-  if  (length newTable < (fst . numFoodBounds) settings)    -- num of foods too small
-    || length (unique places) /= length places              -- several foods at same place
-  then do modify (& gen .~ g)
-          moveFood
-  else do let newTable' = newTable & traverse . prob %~ ( / (fromIntegral . length) newTable )
-          tell $ "FOOD> new positions: " ++ (show $ newTable' ^.. traverse. place) ++ "\n"
-          put $ world & gen .~ g & table .~ newTable'
+  tell $ "FOOD> new positions: " ++ (show $ newTable ^.. traverse. place) ++ "\n"
+  put $ world & gen .~ g & table .~ newTable
 
 
-eatFood :: Game World a Log Bool
+eatFood :: Game World Settings Log Bool
 eatFood  = do
   world <- get
   let rew = world ^? table . traverse . filtered (match world) . reward

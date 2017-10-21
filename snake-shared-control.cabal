@@ -33,6 +33,7 @@ library
                      , lens
                      , lens-aeson
                      , text
+                     , MonadRandom
                      , pomdp
   
   default-language:    Haskell2010

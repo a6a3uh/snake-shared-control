@@ -14,11 +14,10 @@ import Data.Aeson.Types
 
 data CostSettings = NewCostSettings
     { _function :: String
-    , _scale1 :: Double 
     } deriving  ( Generic
                 , Show)
 
-data GameSettings1 = NewGameSettings1
+data GameSettings = NewGameSettings
     { _auto :: Bool
     , _direct :: Bool
     , _cross :: Bool
@@ -31,14 +30,14 @@ data GameSettings1 = NewGameSettings1
                 , Show)
 
 data SnakeSettings = NewSnakeSettings
-    { _size1 :: Int
+    { _size :: Int
     , _position :: (Int, Int)
     } deriving  ( Generic
                 , Show)
 
 data FoodSettings = NewFoodSettings
     { _number :: (Int, Int)
-    , _reward1 :: (Int, Int)
+    , _rewards :: (Int, Int)
     , _exact :: FoodData
     } deriving  ( Generic
                 , Show)
@@ -49,27 +48,27 @@ data FoodData = NewFoodData
     } deriving  ( Generic
                 , Show)
 
-data Settings1 = NewSettings1
-    { _game :: GameSettings1
-    , _snake1 :: SnakeSettings
+data Settings = NewSettings
+    { _game :: GameSettings
+    , _snake' :: SnakeSettings
     , _food :: FoodSettings
     } deriving  ( Generic
                 , Show)
 
 makeLenses ''CostSettings
-makeLenses ''GameSettings1
+makeLenses ''GameSettings
 makeLenses ''SnakeSettings
 makeLenses ''FoodSettings
 makeLenses ''FoodData
-makeLenses ''Settings1
+makeLenses ''Settings
 
 instance FromJSON CostSettings where
     parseJSON = genericParseJSON defaultOptions {
-                fieldLabelModifier = \s -> if s == "_scale1" then  "scale" else drop 1 s }
+        fieldLabelModifier = drop 1}
 
-instance FromJSON Settings1 where
+instance FromJSON Settings where
     parseJSON = genericParseJSON defaultOptions {
-                fieldLabelModifier = \s -> if s == "_snake1" then  "snake" else drop 1 s }
+                fieldLabelModifier = \s -> if s == "_snake'" then  "snake" else drop 1 s }
 
 instance FromJSON FoodData where
     parseJSON = genericParseJSON defaultOptions {
@@ -77,24 +76,19 @@ instance FromJSON FoodData where
 
 instance FromJSON FoodSettings where
     parseJSON = genericParseJSON defaultOptions {
-                fieldLabelModifier = \s -> if s == "_reward1" then "reward" else drop 1 s }
+        fieldLabelModifier = drop 1}
 
 instance FromJSON SnakeSettings where
     parseJSON = genericParseJSON defaultOptions {
-                fieldLabelModifier = \s -> if s == "_size1" then "size" else drop 1 s }
+        fieldLabelModifier = drop 1}        
+                -- fieldLabelModifier = \s -> if s == "_size1" then "size" else drop 1 s }
 
-instance FromJSON GameSettings1 where
+instance FromJSON GameSettings where
     parseJSON = genericParseJSON defaultOptions {
                 fieldLabelModifier = drop 1}
 
 type Game g r w = StateT g (ReaderT r (Writer w))
 type Log = String
-
-data Settings = NewSettings
-    { numFoodBounds :: (Int, Int)
-    , rewardBounds :: (Int, Int)
-    , worldScale :: Int
-    }
 
 type Pos = (Int, Int)
 
@@ -124,24 +118,3 @@ data Food = NewFood
 
 makeLenses ''World
 makeLenses ''Food
-
-instance Arbitrary Food where
-  arbitrary = do
-    let s = (worldScale settings `div` 2) - 1
-    x <- choose (-s, s)
-    y <- choose (-s, s)
-    rew <- choose (rewardBounds settings)
-    let p  = 1
-    return $ NewFood (x, y) rew p
-
-settings :: Settings
-settings = NewSettings
-    { numFoodBounds = (2, 5)
-    , rewardBounds = (-5, 5)
-    , worldScale = 15
-    }
-
-inBounds :: Pos -> Bool
-inBounds (x, y) =
-    let s = worldScale settings `div` 2
-    in  -s <= x && x <= s && -s <= y && y <= s

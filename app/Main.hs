@@ -21,7 +21,7 @@ main :: IO ()
 main = do
     j <- T.readFile "config.yaml"
     seed <- randomIO 
-    let config = fromJust (decode $ T.encodeUtf8 j :: Maybe Settings1) 
+    let config = fromJust (decode $ T.encodeUtf8 j :: Maybe Settings) 
     
     -- let config1 = eitherDecode $ T.encodeUtf8 j :: Either T.Text Settings1-- Either String Settings1
     -- 
@@ -29,8 +29,8 @@ main = do
             NewGameWorld 
             {   _snakeWorld = NewWorld
                 { _direction = North
-                , _snake = [config ^. snake1 . position]
-                , _stomack = config ^. snake1 . size1
+                , _snake = [config ^. snake' . position]
+                , _stomack = config ^. snake' . size
                 , _isOver = False
                 , _gen = mkStdGen seed
                 , _table =  let foods = config ^. food . exact 
@@ -47,7 +47,7 @@ main = do
                     backgroundColor
                     (config ^. game . rate)
                     gworld
-                    (return . drawWorld)
+                    (return . drawWorld (config ^. game . dimentions . _1))
 
     outh <- openFile "output.txt" WriteMode
                     
@@ -56,7 +56,7 @@ main = do
 
     hClose outh
 
-handlerE :: Settings1 -> Handle -> (Event -> Game GameWorld Settings1 Log ()) -> Event -> GameWorld -> IO GameWorld
+handlerE :: Settings -> Handle -> (Event -> Game GameWorld Settings Log ()) -> Event -> GameWorld -> IO GameWorld
 handlerE s h f e w = do
     case e of 
         EventKey key state' _ _ -> case state' of
@@ -73,7 +73,7 @@ handlerE s h f e w = do
     -- else
     --      handler h f e w
 
-handler :: Settings1 -> Handle -> (e -> Game GameWorld Settings1 Log ()) -> e -> GameWorld -> IO GameWorld
+handler :: Settings -> Handle -> (e -> Game GameWorld Settings Log ()) -> e -> GameWorld -> IO GameWorld
 handler s h f e w = do
     let ((_, w'), txt) = runWriter $ (flip runReaderT s) $ (runStateT (f e) w)
     case txt of
