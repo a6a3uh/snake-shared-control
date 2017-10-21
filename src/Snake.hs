@@ -16,7 +16,7 @@ stepSnake :: Game World Settings1 Log ()
 stepSnake = do
     world <- get
     if world ^. isOver
-    then put world
+    then return ()
     else stepWorld
 
 stepWorld :: Game World Settings1 Log ()
@@ -40,7 +40,7 @@ gameOver = do
     let (x:xs) = world ^. snake
     if inBounds x           -- inside world
         && ((x `notElem` xs) || conf ^. game . cross)         -- not eaten itself
-    then put world 
+    then return ()
     else put $ world & isOver .~ True
       
 moves :: Int -> Int -> [(Int, Int)]

@@ -27,24 +27,22 @@ handleEvent event = do
     case event of
         EventResize newResolution   -> handleResize newResolution
         EventKey key state' _ _     -> if gworld ^. snakeWorld . isOver
-            then put gworld
+            then return ()
             else handleKey key state'
-        _ -> put gworld
+        _ -> return ()
 
 handleStep :: Float -> Game GameWorld Settings1 Log ()
 handleStep _time = do
     conf <- ask
-    gworld <- get
     if conf ^. game . auto
     then zoom snakeWorld stepSnake
-    else put gworld
+    else return ()
 
 handleResize :: (Int, Int) -> Game GameWorld Settings1 Log ()
 handleResize newResolution = modify (& resolution .~ newResolution)
 
 handleKey :: Key -> KeyState -> Game GameWorld Settings1 Log ()
 handleKey key state' = do
-    gworld <- get
     conf <- ask
     let cmd = if conf ^. game . direct then commandSnake else commandMarkov
     case state' of
@@ -55,10 +53,10 @@ handleKey key state' = do
             SpecialKey KeyLeft  -> zoom snakeWorld (cmd West)
             SpecialKey KeySpace -> do
                 if conf ^. game . auto
-                then put gworld
+                then return ()
                 else zoom snakeWorld stepSnake
-            _ -> put gworld
-        _ -> put gworld
+            _ -> return ()
+        _ -> return ()
 
 ---------------------------------------
 
