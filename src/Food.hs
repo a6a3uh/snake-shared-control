@@ -39,15 +39,19 @@ moveFood = do
   tell $ "FOOD> new positions: " ++ (show $ newTable ^.. traverse. place) ++ "\n"
   put $ world & gen .~ g & table .~ newTable
 
-
 eatFood :: Game World Settings Log Bool
 eatFood  = do
+  conf <- ask
   world <- get
   let rew = world ^? table . traverse . filtered (match world) . reward
   modify (& stomack %~ (+ fromMaybe 0 rew))
   if (isJust rew) 
   then do
     tell $ "FOOD> eaten!\n"
-    return True
+    if conf ^. food . exact . positions == []
+    then return True
+    else do
+      put $ world & isOver .~ True
+      return True
   else return False
   where match w fd = fd ^. place == head (w ^. snake)
