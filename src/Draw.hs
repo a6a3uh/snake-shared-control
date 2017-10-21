@@ -5,7 +5,6 @@ module Draw where
 import Graphics.Gloss.Interface.Pure.Game
 import Control.Lens
 import Control.Monad.State
-import Control.Monad.Writer
 import Control.Monad.Reader
 import Snake
 import World
@@ -22,7 +21,7 @@ displayMode gworld = InWindow "Snake" (gworld ^. resolution) (0, 0)
 
 ---------------------------------------
 
-handleEvent :: Event -> Game GameWorld a Log () --StateT GameWorld (ReaderT a (Writer String)) ()
+handleEvent :: Event -> Game GameWorld Settings1 Log ()
 handleEvent event = do
     gworld <- get
     case event of
@@ -32,21 +31,32 @@ handleEvent event = do
             else handleKey key state'
         _ -> put gworld
 
-handleStep :: Float -> Game GameWorld a Log () --StateT GameWorld (ReaderT a (Writer String)) ()
-handleStep _time = zoom snakeWorld stepSnake
+handleStep :: Float -> Game GameWorld Settings1 Log ()
+handleStep _time = do
+    conf <- ask
+    gworld <- get
+    if conf ^. game . auto
+    then zoom snakeWorld stepSnake
+    else put gworld
 
-handleResize :: (Int, Int) -> Game GameWorld a Log () --StateT GameWorld (ReaderT a (Writer String)) ()
+handleResize :: (Int, Int) -> Game GameWorld Settings1 Log ()
 handleResize newResolution = modify (& resolution .~ newResolution)
 
-handleKey :: Key -> KeyState -> Game GameWorld a Log () --StateT GameWorld (ReaderT a (Writer String)) ()
+handleKey :: Key -> KeyState -> Game GameWorld Settings1 Log ()
 handleKey key state' = do
     gworld <- get
+    conf <- ask
+    let cmd = if conf ^. game . direct then commandSnake else commandMarkov
     case state' of
         Down -> case key of
-            SpecialKey KeyUp    -> zoom snakeWorld (commandSnake North)
-            SpecialKey KeyRight -> zoom snakeWorld (commandSnake East)
-            SpecialKey KeyDown  -> zoom snakeWorld (commandSnake South)
-            SpecialKey KeyLeft  -> zoom snakeWorld (commandSnake West)
+            SpecialKey KeyUp    -> zoom snakeWorld (cmd North)
+            SpecialKey KeyRight -> zoom snakeWorld (cmd East)
+            SpecialKey KeyDown  -> zoom snakeWorld (cmd South)
+            SpecialKey KeyLeft  -> zoom snakeWorld (cmd West)
+            SpecialKey KeySpace -> do
+                if conf ^. game . auto
+                then put gworld
+                else zoom snakeWorld stepSnake
             _ -> put gworld
         _ -> put gworld
 

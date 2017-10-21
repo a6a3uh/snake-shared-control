@@ -1,7 +1,7 @@
 game:
-  auto: False             # if true then steps at rate otherwise press space for each step          !!!NOT IMPLEMENTED YET!!!
-  direct: False           # if true then direct control otherwise control through Markov inference  !!!NOT IMPLEMENTED YET!!!
-  cross: True             # allow snake to cross itself (no restricted states)                      !!!NOT IMPLEMENTED YET!!!
+  auto: True              # if true then steps at rate otherwise press space for each step          
+  direct: False           # if true then direct control otherwise control through Markov inference
+  cross: True             # allow snake to cross itself (no restricted states)
   steps: 0                # max steps for dynamic prg. 0 is for unlimited search                    !!!NOT IMPLEMENTED YET!!!
   rate: 5                 # steps per second 
   dimentions: [15, 15]    # world size                                                              !!!NOT IMPLEMENTED YET!!!
@@ -13,7 +13,7 @@ snake:
   size: 5                 # initial length of the snake
   position: [0, 0]        # initial position of the snake 
 food:
-  number: [2, 5]                         # range of foods number generated randomly                 !!!NOT IMPLEMENTED YET!!!
+  number: [2, 5]                        # range of foods number generated randomly                 !!!NOT IMPLEMENTED YET!!!
   reward: [-5, 5]                       # range of food cost generated randomly                    !!!NOT IMPLEMENTED YET!!!
   exact:
     positions: [[5, 5], [6, 6], [7, 7]]  # if empty then food gets generated randomly

@@ -1,4 +1,4 @@
-{-# LANGUAGE TemplateHaskell, Rank2Types #-}
+{-# LANGUAGE TemplateHaskell, OverloadedStrings, DeriveGeneric, DeriveAnyClass, TypeApplications, DataKinds #-}
 
 module World where
 
@@ -9,7 +9,83 @@ import Control.Lens
 import Control.Monad.Reader
 import Control.Monad.Writer
 import Control.Monad.State
--- import qualified Data.MemoCombinators as Memo
+import GHC.Generics
+import Data.Aeson.Types
+
+data CostSettings = NewCostSettings
+    { _function :: String
+    , _scale1 :: Double 
+    } deriving  ( Generic
+                , Show)
+
+data GameSettings1 = NewGameSettings1
+    { _auto :: Bool
+    , _direct :: Bool
+    , _cross :: Bool
+    , _steps :: Int
+    , _rate :: Int
+    , _dimentions :: (Int, Int)
+    , _pixels :: (Int, Int)
+    , _cost :: CostSettings
+    } deriving  ( Generic
+                , Show)
+
+data SnakeSettings = NewSnakeSettings
+    { _size1 :: Int
+    , _position :: (Int, Int)
+    } deriving  ( Generic
+                , Show)
+
+data FoodSettings = NewFoodSettings
+    { _number :: (Int, Int)
+    , _reward1 :: (Int, Int)
+    , _exact :: FoodData
+    } deriving  ( Generic
+                , Show)
+
+data FoodData = NewFoodData
+    { _positions :: [(Int, Int)]
+    , _costs :: [Int]
+    } deriving  ( Generic
+                , Show)
+
+data Settings1 = NewSettings1
+    { _game :: GameSettings1
+    , _snake1 :: SnakeSettings
+    , _food :: FoodSettings
+    } deriving  ( Generic
+                , Show)
+
+makeLenses ''CostSettings
+makeLenses ''GameSettings1
+makeLenses ''SnakeSettings
+makeLenses ''FoodSettings
+makeLenses ''FoodData
+makeLenses ''Settings1
+
+instance FromJSON CostSettings where
+    parseJSON = genericParseJSON defaultOptions {
+                fieldLabelModifier = \s -> if s == "_scale1" then  "scale" else drop 1 s }
+
+instance FromJSON Settings1 where
+    parseJSON = genericParseJSON defaultOptions {
+                fieldLabelModifier = \s -> if s == "_snake1" then  "snake" else drop 1 s }
+
+instance FromJSON FoodData where
+    parseJSON = genericParseJSON defaultOptions {
+                fieldLabelModifier = drop 1}
+
+instance FromJSON FoodSettings where
+    parseJSON = genericParseJSON defaultOptions {
+                fieldLabelModifier = \s -> if s == "_reward1" then "reward" else drop 1 s }
+
+instance FromJSON SnakeSettings where
+    parseJSON = genericParseJSON defaultOptions {
+                fieldLabelModifier = \s -> if s == "_size1" then "size" else drop 1 s }
+
+instance FromJSON GameSettings1 where
+    parseJSON = genericParseJSON defaultOptions {
+                fieldLabelModifier = drop 1}
 
 type Game g r w = StateT g (ReaderT r (Writer w))
 type Log = String

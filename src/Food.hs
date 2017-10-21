@@ -13,7 +13,7 @@ import Control.Monad.Reader
 
 import World
 
-moveFood :: Game World a Log () -- StateT World (ReaderT a (Writer String)) ()
+moveFood :: Game World a Log ()
 moveFood = do
   world <- get
   let (seed, g) = random (world ^. gen)
@@ -29,7 +29,7 @@ moveFood = do
           put $ world & gen .~ g & table .~ newTable'
 
 
-eatFood :: Game World a Log Bool --StateT World (ReaderT a (Writer String)) Bool
+eatFood :: Game World a Log Bool
 eatFood  = do
   world <- get
   let rew = world ^? table . traverse . filtered (match world) . reward
