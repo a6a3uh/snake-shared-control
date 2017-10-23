@@ -1,16 +1,12 @@
 module Food (moveFood, eatFood) where
 
 import System.Random
-import Test.QuickCheck.Arbitrary
-import Test.QuickCheck.Random
-import Test.QuickCheck.Gen
 import Data.List.Unique
 import Control.Lens
 import Data.Maybe
 import Control.Monad.State
 import Control.Monad.Writer
 import Control.Monad.Reader
--- import System.Random
 import Control.Monad.Random
 
 import World
@@ -21,11 +17,11 @@ randomTable dims rews nums = do
       pos n = let n' = n `div` 2 in getRandomR (-n', n')
       posFoods = liftM2 (,) (pos $ fst dims) (pos $ snd dims)  
   numderFoods <- getRandomR nums
-  rewards <- sequence $ replicate numderFoods rewardFoods
+  rewards' <- sequence $ replicate numderFoods rewardFoods
   places <- sequence $ replicate numderFoods posFoods
   if length (unique places) /= length places
   then randomTable dims rews nums
-  else return $ (zipWith NewFood places rewards) <*> [1 / fromIntegral numderFoods]
+  else return $ zipWith NewFood places rewards' <*> [1 / fromIntegral numderFoods]
 
 moveFood :: Game World Settings Log ()
 moveFood = do

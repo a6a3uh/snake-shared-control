@@ -2,8 +2,6 @@
 
 module World where
 
-import Test.QuickCheck.Arbitrary
-import Test.QuickCheck.Gen
 import System.Random
 import Control.Lens
 import Control.Monad.Reader
@@ -81,7 +79,6 @@ instance FromJSON FoodSettings where
 instance FromJSON SnakeSettings where
     parseJSON = genericParseJSON defaultOptions {
         fieldLabelModifier = drop 1}        
-                -- fieldLabelModifier = \s -> if s == "_size1" then "size" else drop 1 s }
 
 instance FromJSON GameSettings where
     parseJSON = genericParseJSON defaultOptions {
