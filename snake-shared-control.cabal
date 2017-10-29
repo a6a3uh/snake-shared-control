@@ -54,6 +54,7 @@ executable snake-shared-control-exe
                      , aeson
                      , yaml
                      , monad-memo
+                     , containers
                      , pomdp
   default-language:    Haskell2010
 

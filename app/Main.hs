@@ -8,6 +8,7 @@ import qualified Data.Text.Encoding as T
 import qualified Data.Text.IO as T
 import Data.Yaml
 import Data.Maybe
+import Data.Map
 import Control.Lens
 import Control.Monad.State
 import Control.Monad.Writer
@@ -20,9 +21,12 @@ import World
 import Draw
 import Dynamic
 
+
+
 data WholeWorld = NewWholeWorld
     { _gameWorld :: GameWorld
-    , _stub :: Int
+    , _cache1 :: Map (Int, Int, Int) [Double]
+    , _cache2 :: Map (Int, Int, Int) Double
     }
 
 makeLenses ''WholeWorld         
@@ -58,7 +62,7 @@ main = do
                                                 (foods ^. costs) } 
             ,   _resolution = config ^. game . pixels }
 
-        wholeWorld = NewWholeWorld { _gameWorld = gworld, _stub = 0 }
+        wholeWorld = NewWholeWorld { _gameWorld = gworld, _cache1 = Empty, _cache2 = Empty }
 
         play' = playIO    
                     (displayMode $ wholeWorld ^. gameWorld)
@@ -93,9 +97,18 @@ handlerE s h f e w = do
 
 handler :: Settings' -> Handle -> (e -> Game GameWorld Settings' ()) -> e -> WholeWorld -> IO WholeWorld
 handler s h f e w = do
-    let ((((_, w'), txt),_),_) =  startRunMemo . startRunMemoT . runWriterT . flip runReaderT s . flip runStateT w $ zoom gameWorld $ f e
-    case txt of
-        [] -> return ()
-        _  -> do hPutStrLn h txt
-                 putStrLn txt
-    return w'
+    let ((((_, w'), txt), c1), c2) =  flip runMemo (w ^. cache2) 
+                                    . flip runMemoT (w ^. cache1) 
+                                    . runWriterT 
+                                    . flip runReaderT s 
+                                    . flip runStateT w 
+                                    . zoom gameWorld 
+                                    $ f e
+    when (txt /= "") (hPutStrLn h txt)
+        -- hPutStrLn h txt
+        -- putStrLn txt
+    -- case txt of
+    --     [] -> return ()
+    --     _  -> do hPutStrLn h txt
+    --              putStrLn txt
+    return $ w' & cache1 .~ c1 & cache2  .~ c2
