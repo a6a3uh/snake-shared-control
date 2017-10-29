@@ -6,11 +6,11 @@ game:
   rate: 5                 # steps per second 
   dimentions: [15, 15]    # world size.                   !!! numbers should be the same. nonsquare world is not supperted !!!
   pixels: [400, 400]      # initial resolution of the world in pixels (window could be resized)
-  cost: 
-    function: sigmoid     # linear=abs(x)+abs(y), sqrt=sqrt(linear) or sigmoid=sigmoid(linear)      !!!NOT IMPLEMENTED YET!!!
+# dynamic:
+  # dynamic
 snake:
-  size: 5                 # initial length of the snake
-  position: [0, 0]        # initial position of the snake 
+  sizeInit: 5                 # initial length of the snake
+  positionInit: [0, 0]        # initial position of the snake 
 food:
   number: [2, 5]                        # range of foods number generated randomly
   rewards: [-5, 5]                      # range of food cost generated randomly

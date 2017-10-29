@@ -9,6 +9,7 @@ import Control.Monad.Writer
 import Control.Monad.State
 import GHC.Generics
 import Data.Aeson.Types
+import Dynamic
 
 data CostSettings = NewCostSettings
     { _function :: String
@@ -23,13 +24,12 @@ data GameSettings = NewGameSettings
     , _rate :: Int
     , _dimentions :: (Int, Int)
     , _pixels :: (Int, Int)
-    , _cost :: CostSettings
     } deriving  ( Generic
                 , Show)
 
 data SnakeSettings = NewSnakeSettings
-    { _size :: Int
-    , _position :: (Int, Int)
+    { _sizeInit :: Int
+    , _positionInit :: (Int, Int)
     } deriving  ( Generic
                 , Show)
 
@@ -50,8 +50,16 @@ data Settings = NewSettings
     { _game :: GameSettings
     , _snake' :: SnakeSettings
     , _food :: FoodSettings
+    -- , _dynamic :: DynamicEnv
     } deriving  ( Generic
                 , Show)
+
+data Settings' = NewSettings'
+    { _gameSettings :: GameSettings
+    , _snakeSettings :: SnakeSettings
+    , _foodSettings :: FoodSettings
+    , _dynamicSettings :: DynamicEnv Int Double
+    } deriving  ( Generic )           
 
 makeLenses ''CostSettings
 makeLenses ''GameSettings
@@ -59,6 +67,7 @@ makeLenses ''SnakeSettings
 makeLenses ''FoodSettings
 makeLenses ''FoodData
 makeLenses ''Settings
+makeLenses ''Settings'
 
 instance FromJSON CostSettings where
     parseJSON = genericParseJSON defaultOptions {
@@ -84,10 +93,12 @@ instance FromJSON GameSettings where
     parseJSON = genericParseJSON defaultOptions {
                 fieldLabelModifier = drop 1}
 
-type Game g r w = StateT g (ReaderT r (Writer w))
+type Game s r = StateT s (ReaderT r (WriterT Log (MemoQV Int Double)))
 type Log = String
 
-type Pos = (Int, Int)
+dynamicEnv = DynamicEnv {_dynamicCost = costLogistic, _dynamicLim = 10, _dynamicLog = False, _dynamicMaxSteps = 5}
+
+-- type Pos = (Int, Int)
 
 data Direction
     = West
@@ -97,7 +108,7 @@ data Direction
 
 data World = NewWorld
     { _direction :: Direction
-    , _snake :: [Pos]
+    , _snake :: [Pos Int]
     , _stomack :: Reward
     , _isOver :: Bool
     , _gen :: StdGen
@@ -108,7 +119,7 @@ type Reward = Int
 type Probability = Double
 
 data Food = NewFood
-    { _place :: Pos
+    { _place :: Pos Int
     , _reward :: Reward
     , _prob :: Probability
     } deriving (Read, Show)

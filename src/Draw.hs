@@ -21,7 +21,7 @@ displayMode gworld = InWindow "Snake" (gworld ^. resolution) (0, 0)
 
 ---------------------------------------
 
-handleEvent :: Event -> Game GameWorld Settings Log ()
+handleEvent :: Event -> Game GameWorld Settings' ()
 handleEvent event = do
     gworld <- get
     case event of
@@ -31,20 +31,20 @@ handleEvent event = do
             else handleKey key state'
         _ -> return ()
 
-handleStep :: Float -> Game GameWorld Settings Log ()
+handleStep :: Float -> Game GameWorld Settings' ()
 handleStep _time = do
     conf <- ask
-    if conf ^. game . auto
+    if conf ^. gameSettings . auto
     then zoom snakeWorld stepSnake
     else return ()
 
-handleResize :: (Int, Int) -> Game GameWorld Settings Log ()
+handleResize :: (Int, Int) -> Game GameWorld Settings' ()
 handleResize newResolution = modify (& resolution .~ newResolution)
 
-handleKey :: Key -> KeyState -> Game GameWorld Settings Log ()
+handleKey :: Key -> KeyState -> Game GameWorld Settings' ()
 handleKey key state' = do
     conf <- ask
-    let cmd = if conf ^. game . direct then commandSnake else commandMarkov
+    let cmd = if conf ^. gameSettings . direct then commandSnake else commandMarkov
     case state' of
         Down -> case key of
             SpecialKey KeyUp    -> zoom snakeWorld (cmd North)
@@ -52,7 +52,7 @@ handleKey key state' = do
             SpecialKey KeyDown  -> zoom snakeWorld (cmd South)
             SpecialKey KeyLeft  -> zoom snakeWorld (cmd West)
             SpecialKey KeySpace -> do
-                if conf ^. game . auto
+                if conf ^. gameSettings . auto
                 then return ()
                 else zoom snakeWorld stepSnake
             _ -> return ()
@@ -89,14 +89,14 @@ drawFood sc gworld food = let box = drawBox sc gworld (food ^. place)
                               txt = drawText sc food gworld (food ^. place) --G.color G.red (G.scale 0.2 0.2 (G.text $ (show . reward . apples) world))
                           in mappend box txt
 
-drawBox :: Int -> GameWorld -> Pos -> Picture
+drawBox :: Int -> GameWorld -> (Int, Int) -> Picture
 drawBox sc gworld = drawPos sc (rectangleUpperSolid s s) gworld
     where s = size' gworld / fromIntegral sc - 2
 
-drawText :: Int -> Food -> GameWorld -> Pos -> Picture
+drawText :: Int -> Food -> GameWorld -> (Int, Int) -> Picture
 drawText sc food = drawPos sc (color red (scale 0.1 0.1 (text . show $ food ^. reward)))
 
-drawPos :: Int -> Picture -> GameWorld -> Pos -> Picture
+drawPos :: Int -> Picture -> GameWorld -> (Int, Int) -> Picture
 drawPos sc pic gworld (x, y) =
     let s = size' gworld / fromIntegral sc
         x' = s * fromIntegral x

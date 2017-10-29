@@ -12,16 +12,24 @@ import Control.Lens
 import Control.Monad.State
 import Control.Monad.Writer
 import Control.Monad.Reader
+import Control.Monad.Memo
 import System.IO
 import System.Exit
 import World
 import Draw
+import Dynamic
                         
 main :: IO ()
 main = do
     j <- T.readFile "config.yaml"
     seed <- randomIO 
-    let config = fromJust (decode $ T.encodeUtf8 j :: Maybe Settings) 
+    let config = Data.Maybe.fromJust (decode $ T.encodeUtf8 j :: Maybe Settings) 
+        config' = NewSettings' {
+              _gameSettings = config ^. game
+            , _snakeSettings = config ^. snake'
+            , _foodSettings = config ^. food
+            , _dynamicSettings = DynamicEnv {_dynamicCost = costLogistic, _dynamicLim = 10, _dynamicLog = False, _dynamicMaxSteps = 5}
+        }
     
     -- let config1 = eitherDecode $ T.encodeUtf8 j :: Either T.Text Settings1-- Either String Settings1
     -- 
@@ -29,8 +37,8 @@ main = do
             NewGameWorld 
             {   _snakeWorld = NewWorld
                 { _direction = North
-                , _snake = [config ^. snake' . position]
-                , _stomack = config ^. snake' . size
+                , _snake = [config ^. snake' . positionInit]
+                , _stomack = config ^. snake' . sizeInit
                 , _isOver = False
                 , _gen = mkStdGen seed
                 , _table =  let foods = config ^. food . exact 
@@ -51,12 +59,12 @@ main = do
 
     outh <- openFile "output.txt" WriteMode
                     
-    play'   (handlerE config outh handleEvent)
-            (handler  config outh handleStep)
+    play'   (handlerE config' outh handleEvent)
+            (handler  config' outh handleStep)
 
     hClose outh
 
-handlerE :: Settings -> Handle -> (Event -> Game GameWorld Settings Log ()) -> Event -> GameWorld -> IO GameWorld
+handlerE :: Settings' -> Handle -> (Event -> Game GameWorld Settings' ()) -> Event -> GameWorld -> IO GameWorld
 handlerE s h f e w = do
     case e of 
         EventKey key state' _ _ -> case state' of
@@ -73,9 +81,9 @@ handlerE s h f e w = do
     -- else
     --      handler h f e w
 
-handler :: Settings -> Handle -> (e -> Game GameWorld Settings Log ()) -> e -> GameWorld -> IO GameWorld
+handler :: Settings' -> Handle -> (e -> Game GameWorld Settings' ()) -> e -> GameWorld -> IO GameWorld
 handler s h f e w = do
-    let ((_, w'), txt) = runWriter $ (flip runReaderT s) $ (runStateT (f e) w)
+    let ((((_, w'), txt),_),_) =  startRunMemo . startRunMemoT . runWriterT . flip runReaderT s . flip runStateT w $ f e
     case txt of
         [] -> return ()
         _  -> do hPutStrLn h txt
