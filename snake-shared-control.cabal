@@ -55,6 +55,7 @@ executable snake-shared-control-exe
                      , yaml
                      , monad-memo
                      , containers
+                     , ParserFunction
                      , pomdp
   default-language:    Haskell2010
 

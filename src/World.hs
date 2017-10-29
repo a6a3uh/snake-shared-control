@@ -45,11 +45,19 @@ data FoodData = NewFoodData
     } deriving  ( Generic
                 , Show)
 
+data DynamicSettings = NewDynamicSettings
+    { _costString :: String
+    , _limit :: Int
+    , _logging :: Bool
+    , _maxStepsSearch :: Int
+    } deriving  ( Generic
+                , Show)
+
 data Settings = NewSettings
     { _game :: GameSettings
     , _snake' :: SnakeSettings
     , _food :: FoodSettings
-    -- , _dynamic :: DynamicEnv
+    , _dynamic' :: DynamicSettings
     } deriving  ( Generic
                 , Show)
 
@@ -65,6 +73,7 @@ makeLenses ''GameSettings
 makeLenses ''SnakeSettings
 makeLenses ''FoodSettings
 makeLenses ''FoodData
+makeLenses ''DynamicSettings
 makeLenses ''Settings
 makeLenses ''Settings'
 
@@ -74,11 +83,18 @@ instance FromJSON CostSettings where
 
 instance FromJSON Settings where
     parseJSON = genericParseJSON defaultOptions {
-                fieldLabelModifier = \s -> if s == "_snake'" then  "snake" else drop 1 s }
+                fieldLabelModifier = \s -> case s of 
+                    "_snake'"   ->  "snake" 
+                    "_dynamic'" -> "dynamic"
+                    _           -> drop 1 s }
 
 instance FromJSON FoodData where
     parseJSON = genericParseJSON defaultOptions {
                 fieldLabelModifier = drop 1}
+
+instance FromJSON DynamicSettings where
+    parseJSON = genericParseJSON defaultOptions {
+        fieldLabelModifier = drop 1}
 
 instance FromJSON FoodSettings where
     parseJSON = genericParseJSON defaultOptions {

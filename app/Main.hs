@@ -14,6 +14,7 @@ import Control.Monad.State
 import Control.Monad.Writer
 import Control.Monad.Reader
 import Control.Monad.Memo
+import Text.Parsec.Expr.Math
 import Control.Lens
 import System.IO
 import System.Exit
@@ -36,16 +37,19 @@ main = do
     j <- T.readFile "config.yaml"
     seed <- randomIO 
     let config = Data.Maybe.fromJust (decode $ T.encodeUtf8 j :: Maybe Settings) 
+        Right expr = parse $ config ^. dynamic' . costString
+        func = \x y -> Data.Maybe.fromJust $ evaluate (fromList [("x",x), ("y",y)]) (Just expr)
+        func' (x, y) = func (fromIntegral x) (fromIntegral y) 
         config' = NewSettings' 
             {
               _gameSettings = config ^. game
             , _snakeSettings = config ^. snake'
             , _foodSettings = config ^. food
             , _dynamicSettings = DynamicEnv 
-                { _dynamicCost = costLogistic
-                , _dynamicLim = 10
-                , _dynamicLog = True
-                , _dynamicMaxSteps = 5
+                { _dynamicCost = func'
+                , _dynamicLim = config ^. dynamic' . limit
+                , _dynamicLog = config ^. dynamic' . logging
+                , _dynamicMaxSteps = config ^. dynamic' . maxStepsSearch
                 }
             }
     
@@ -95,11 +99,6 @@ handlerE s h f e w = do
                 _ -> handler s h f e w
             _ -> handler s h f e w
         _ -> handler s h f e w
-
-    -- if e ^? _Ctor @"EventKey" . getField @"Key" . _Ctor @"SpecialKey" == Just KeyEsc
-    -- then System.Exit.exitSuccess
-    -- else
-    --      handler h f e w
 
 handler :: Settings' -> Handle -> (e -> Game GameWorld Settings' ()) -> e -> WholeWorld -> IO WholeWorld
 handler s h f e w = do

@@ -6,10 +6,10 @@ game:
   dimentions: [15, 15]    # world size.                   !!! numbers should be the same. nonsquare world is not supperted !!!
   pixels: [400, 400]      # initial resolution of the world in pixels (window could be resized)
 dynamic:
-  cost: x + y
-  lim: 10
-  log: False 
-  maxSteps: 5
+  costString: abs x + abs y 
+  limit: 15
+  logging: False 
+  maxStepsSearch: 5
 snake:
   sizeInit: 5                 # initial length of the snake
   positionInit: [0, 0]        # initial position of the snake 
