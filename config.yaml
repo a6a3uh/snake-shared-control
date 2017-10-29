@@ -8,7 +8,7 @@ game:
 dynamic:
   costString: abs x + abs y 
   limit: 15
-  logging: False          # !!! NOT IMPLEMENTED YET !!!
+  logging: False
   maxStepsSearch: 5       # !!! NOT IMPLEMENTED YET !!!
 snake:
   sizeInit: 5                 # initial length of the snake
