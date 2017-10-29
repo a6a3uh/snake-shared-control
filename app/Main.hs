@@ -13,12 +13,20 @@ import Control.Monad.State
 import Control.Monad.Writer
 import Control.Monad.Reader
 import Control.Monad.Memo
+import Control.Lens
 import System.IO
 import System.Exit
 import World
 import Draw
 import Dynamic
-                        
+
+data WholeWorld = NewWholeWorld
+    { _gameWorld :: GameWorld
+    , _stub :: Int
+    }
+
+makeLenses ''WholeWorld         
+
 main :: IO ()
 main = do
     j <- T.readFile "config.yaml"
@@ -50,12 +58,14 @@ main = do
                                                 (foods ^. costs) } 
             ,   _resolution = config ^. game . pixels }
 
-    let play' = playIO    
-                    (displayMode gworld)
+        wholeWorld = NewWholeWorld { _gameWorld = gworld, _stub = 0 }
+
+        play' = playIO    
+                    (displayMode $ wholeWorld ^. gameWorld)
                     backgroundColor
                     (config ^. game . rate)
-                    gworld
-                    (return . drawWorld (config ^. game . dimentions . _1))
+                    wholeWorld
+                    (return . drawWorld (config ^. game . dimentions . _1) . flip (^.) gameWorld)
 
     outh <- openFile "output.txt" WriteMode
                     
@@ -64,7 +74,7 @@ main = do
 
     hClose outh
 
-handlerE :: Settings' -> Handle -> (Event -> Game GameWorld Settings' ()) -> Event -> GameWorld -> IO GameWorld
+handlerE :: Settings' -> Handle -> (Event -> Game GameWorld Settings' ()) -> Event -> WholeWorld -> IO WholeWorld
 handlerE s h f e w = do
     case e of 
         EventKey key state' _ _ -> case state' of
@@ -81,9 +91,9 @@ handlerE s h f e w = do
     -- else
     --      handler h f e w
 
-handler :: Settings' -> Handle -> (e -> Game GameWorld Settings' ()) -> e -> GameWorld -> IO GameWorld
+handler :: Settings' -> Handle -> (e -> Game GameWorld Settings' ()) -> e -> WholeWorld -> IO WholeWorld
 handler s h f e w = do
-    let ((((_, w'), txt),_),_) =  startRunMemo . startRunMemoT . runWriterT . flip runReaderT s . flip runStateT w $ f e
+    let ((((_, w'), txt),_),_) =  startRunMemo . startRunMemoT . runWriterT . flip runReaderT s . flip runStateT w $ zoom gameWorld $ f e
     case txt of
         [] -> return ()
         _  -> do hPutStrLn h txt

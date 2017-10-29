@@ -20,7 +20,6 @@ data GameSettings = NewGameSettings
     { _auto :: Bool
     , _direct :: Bool
     , _cross :: Bool
-    , _steps :: Int
     , _rate :: Int
     , _dimentions :: (Int, Int)
     , _pixels :: (Int, Int)
