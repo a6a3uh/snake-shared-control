@@ -1,21 +1,39 @@
 game:
-  auto: True              # if true then steps at rate otherwise press space for each step          
-  direct: False           # if true then direct control otherwise control through Markov inference
-  cross: True             # allow snake to cross itself (no restricted states)
-  rate: 5                 # steps per second 
-  dimentions: [15, 15]    # world size.                   !!! numbers should be the same. nonsquare world is not supperted !!!
-  pixels: [400, 400]      # initial resolution of the world in pixels (window could be resized)
+# if true then steps at rate otherwise press space for each step
+  auto: True
+# if true then direct control otherwise control through Markov inference
+  direct: False
+# allow snake to cross itself (no restricted states)
+  cross: True
+# steps per second 
+  rate: 5
+# world size.
+  dimentions: 15
+# initial resolution of the world in pixels (window could be resized)
+  pixels: [400, 400]
 dynamic:
-  costString: abs x + abs y 
+# function should be symmetric
+  costString: abs x + abs y
+# limit of field size for DP ususally should be equal to dimetion
   limit: 15
-  logging: False
-  maxStepsSearch: 5       # !!! NOT IMPLEMENTED YET !!!
+# turn on logging DP process
+  logging: True
+# DP step limit. Use 0 for unconstrained search
+  maxStepsSearch: 2
 snake:
-  sizeInit: 5                 # initial length of the snake
-  positionInit: [0, 0]        # initial position of the snake 
+# initial length of the snake
+  sizeInit: 5
+# initial position of the snake
+  positionInit: [0, 0]
 food:
-  number: [2, 5]                        # range of foods number generated randomly
-  rewards: [-5, 5]                      # range of food cost generated randomly
+# range of foods number generated randomly
+  number: [2, 5]
+# range of food cost generated randomly
+  rewards: [-5, 5]
   exact:
-    positions: [] #[[5, 5], [6, 6], [7, 7]]  # if empty then food gets generated randomly otherwise gameover after fst eaten
-    costs: [] #[0, 3, 4]                     # if empty then food gets generated randomly 
+  # if empty then food gets generated randomly otherwise gameover after fst eaten
+  # for example use [[5, 5], [6, 6], [7, 7]]
+    positions: []
+  # if empty then food gets generated randomly
+  # for example [0, 3, 4]
+    costs: []

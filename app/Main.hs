@@ -13,7 +13,7 @@ import Control.Lens
 import Control.Monad.State
 import Control.Monad.Writer
 import Control.Monad.Reader
-import Control.Monad.Memo
+import Control.Monad.Memo hiding (fromJust, isNothing)
 import Text.Parsec.Expr.Math
 import Control.Lens
 import System.IO
@@ -36,22 +36,50 @@ main :: IO ()
 main = do
     j <- T.readFile "config.yaml"
     seed <- randomIO 
-    let config = Data.Maybe.fromJust (decode $ T.encodeUtf8 j :: Maybe Settings) 
-        Right expr = parse $ config ^. dynamic' . costString
-        func = \x y -> Data.Maybe.fromJust $ evaluate (fromList [("x",x), ("y",y)]) (Just expr)
-        func' (x, y) = func (fromIntegral x) (fromIntegral y) 
-        config' = NewSettings' 
-            {
-              _gameSettings = config ^. game
-            , _snakeSettings = config ^. snake'
-            , _foodSettings = config ^. food
-            , _dynamicSettings = DynamicEnv 
-                { _dynamicCost = func'
-                , _dynamicLim = config ^. dynamic' . limit
-                , _dynamicLog = config ^. dynamic' . logging
-                , _dynamicMaxSteps = config ^. dynamic' . maxStepsSearch
-                }
-            }
+    let config' = do
+            cfg <- decode $ T.encodeUtf8 j :: Maybe Settings
+            expr <- case parse $ cfg ^. dynamic' . costString of 
+                        Left _ -> Nothing
+                        Right e -> Just e
+            -- f <- flip evaluate expr
+            let f x y = fromJust $ evaluate (fromList [("x",x), ("y",y)]) (Just expr)
+                f' (x, y) = f (fromIntegral x) (fromIntegral y)
+            return $ NewSettings' 
+                    { _gameSettings = cfg ^. game
+                    , _snakeSettings = cfg ^. snake'
+                    , _foodSettings = cfg ^. food
+                    , _dynamicSettings = DynamicEnv 
+                        { _dynamicCost = f'
+                        , _dynamicLim = cfg ^. dynamic' . limit
+                        , _dynamicLog = cfg ^. dynamic' . logging
+                        , _dynamicMaxSteps = cfg ^. dynamic' . maxStepsSearch
+                        }
+                    }
+    when (isNothing config') $ do
+            putStrLn "Error parsing config"
+            exitWith (ExitFailure 1)
+    let config = fromJust config'
+
+    -- let cfg = decode $ T.encodeUtf8 j :: Maybe Settings
+    --     func (x, y) = do    config <- cfg
+    --                         let expr = parse $ config ^. dynamic' . costString
+    --                         f <- evaluate (fromList [("x",x), ("y",y)]) expr
+    --                         let f' (x, y) = f (fromIntegral x) (fromIntegral y) 
+    --                         f'
+    --     -- func = \x y -> Data.Maybe.fromJust $ evaluate (fromList [("x",x), ("y",y)]) (Just expr)
+    --     func' (x, y) = func (fromIntegral x) (fromIntegral y) 
+    --     config' = NewSettings' 
+    --         {
+    --           _gameSettings = config ^. game
+    --         , _snakeSettings = config ^. snake'
+    --         , _foodSettings = config ^. food
+    --         , _dynamicSettings = DynamicEnv 
+    --             { _dynamicCost = func'
+    --             , _dynamicLim = config ^. dynamic' . limit
+    --             , _dynamicLog = config ^. dynamic' . logging
+    --             , _dynamicMaxSteps = config ^. dynamic' . maxStepsSearch
+    --             }
+    --         }
     
     -- let config1 = eitherDecode $ T.encodeUtf8 j :: Either T.Text Settings1-- Either String Settings1
     -- 
@@ -59,32 +87,32 @@ main = do
             NewGameWorld 
             {   _snakeWorld = NewWorld
                 { _direction = North
-                , _snake = [config ^. snake' . positionInit]
-                , _stomack = config ^. snake' . sizeInit
+                , _snake = [config ^. snakeSettings . positionInit]
+                , _stomack = config ^. snakeSettings . sizeInit
                 , _isOver = False
                 , _gen = mkStdGen seed
-                , _table =  let foods = config ^. food . exact 
+                , _table =  let foods = config ^. foodSettings . exact 
                                 foodPlace p x r = NewFood {_place = x, _reward = r, _prob = p}
                             in case foods ^. positions of
                                 []  -> [NewFood {_place = (0, 1), _reward = 0, _prob = 1}]
                                 _   -> zipWith  (foodPlace ((1 /) . fromIntegral . length $ foods ^. positions))
                                                 (foods ^. positions)
                                                 (foods ^. costs) } 
-            ,   _resolution = config ^. game . pixels }
+            ,   _resolution = config ^. gameSettings . pixels }
 
         wholeWorld = NewWholeWorld { _gameWorld = gworld, _cacheQ = Empty, _cacheV = Empty }
 
         play' = playIO    
                     (displayMode $ wholeWorld ^. gameWorld)
                     backgroundColor
-                    (config ^. game . rate)
+                    (config ^. gameSettings . rate)
                     wholeWorld
-                    (return . drawWorld (config ^. game . dimentions . _1) . flip (^.) gameWorld)
+                    (return . drawWorld (config ^. gameSettings . dimentions) . flip (^.) gameWorld)
 
     outh <- openFile "output.txt" WriteMode
                     
-    play'   (handlerE config' outh handleEvent)
-            (handler  config' outh handleStep)
+    play'   (handlerE config outh handleEvent)
+            (handler  config outh handleStep)
 
     hClose outh
 

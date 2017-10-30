@@ -30,7 +30,7 @@ moveFood = do
   let dims = conf ^. gameSettings . dimentions
       rews = conf ^. foodSettings . rewards
       nums = conf ^. foodSettings . number
-      (newTable, g) = runRand (randomTable dims rews nums) (world ^. gen) 
+      (newTable, g) = runRand (randomTable (dims, dims) rews nums) (world ^. gen) 
   
   tell $ "FOOD> new positions: " ++ (show $ newTable ^.. traverse. place) ++ "\n"
   put $ world & gen .~ g & table .~ newTable

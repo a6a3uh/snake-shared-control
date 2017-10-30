@@ -21,7 +21,7 @@ data GameSettings = NewGameSettings
     , _direct :: Bool
     , _cross :: Bool
     , _rate :: Int
-    , _dimentions :: (Int, Int)
+    , _dimentions :: Int
     , _pixels :: (Int, Int)
     } deriving  ( Generic
                 , Show)

@@ -39,7 +39,8 @@ gameOver = do
     world <- get
     conf <- ask
     let (x:xs) = world ^. snake
-    if inBounds (conf ^. gameSettings . dimentions) x                   -- inside world
+        dims = conf ^. gameSettings . dimentions
+    if inBounds (dims, dims) x                   -- inside world
         && ((x `notElem` xs) || conf ^. gameSettings . cross)           -- not eaten itself
     then return ()
     else put $ world & isOver .~ True
