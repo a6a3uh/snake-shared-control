@@ -4,20 +4,25 @@ game:
 # if true then direct control otherwise control through Markov inference
   direct: False
 # allow snake to cross itself (no restricted states)
-  cross: True
+  cross: False
 # steps per second 
   rate: 5
 # world size.
   dimentions: 15
 # initial resolution of the world in pixels (window could be resized)
   pixels: [400, 400]
+player:
+# autoplay is on
+  autoPlay: True
+# command on Step number if zero then command on reaching cycle 
+  commandOnStep: 0
 dynamic:
 # function should be symmetric
   costString: abs x + abs y
 # limit of field size for DP ususally should be equal to dimetion
   limit: 15
 # turn on logging DP process
-  logging: True
+  logging: False
 # DP step limit. Use 0 for unconstrained search
   maxStepsSearch: 2
 snake:

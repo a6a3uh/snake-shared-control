@@ -48,6 +48,7 @@ main = do
                     { _gameSettings = cfg ^. game
                     , _snakeSettings = cfg ^. snake'
                     , _foodSettings = cfg ^. food
+                    , _playerSettings = cfg ^. player
                     , _dynamicSettings = DynamicEnv 
                         { _dynamicCost = f'
                         , _dynamicLim = cfg ^. dynamic' . limit
@@ -91,6 +92,8 @@ main = do
                 , _stomack = config ^. snakeSettings . sizeInit
                 , _isOver = False
                 , _gen = mkStdGen seed
+                , _visited = []
+                , _tick = 0
                 , _table =  let foods = config ^. foodSettings . exact 
                                 foodPlace p x r = NewFood {_place = x, _reward = r, _prob = p}
                             in case foods ^. positions of

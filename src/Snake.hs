@@ -20,6 +20,16 @@ stepSnake = do
     then return ()
     else stepWorld
 
+optimalCommand :: Pos Int -> [Food] -> Direction
+optimalCommand p t = dirSelect p posrew
+    where   rews = t ^.. traverse . reward
+            maxrew = fromJust $ elemIndex (maximum rews) rews 
+            posrew = (t !! maxrew) ^. place
+            dirSelect (x0, y0) (x1, y1) | x1 - x0 >= 0 && x1 - x0 >= y1 - y0 = East
+                                        | x1 - x0 <= 0 && x1 - x0 <= y1 - y0 = West
+                                        | y1 - y0 >= 0 && y1 - y0 >= x1 - x0 = North
+                                        | y1 - y0 <= 0 && y1 - y0 <= x1 - x0 = South
+
 stepWorld :: Game World Settings' ()
 stepWorld = do 
     world <- get
@@ -27,11 +37,27 @@ stepWorld = do
     if conf ^. gameSettings . direct
     then moveSnake (world ^. direction) 
     else do 
+        when (conf ^. playerSettings . autoPlay) $ do
+            if (conf ^. playerSettings . commandOnStep /= 0) 
+            then    if (world ^. tick >= conf ^. playerSettings . commandOnStep) 
+                    then do
+                        put $ world & tick .~ 0                        
+                        commandMarkov $ optimalCommand (head $ world ^. snake) (world ^. table)
+                    else put $ world & tick %~ succ            
+            else    if ((head $ world ^. snake) `elem` (world ^. visited)) 
+                    then do
+                        put $ world & visited .~ []
+                        commandMarkov $ optimalCommand (head $ world ^. snake) (world ^. table)
+                    else put $ world & visited %~ ((head $ world ^. snake) :)
         d <- dirMarkov
         moveSnake d
+        -- dirMarkov >>= moveSnake
     eaten <- eatFood
     if eaten
-    then moveFood
+    then do
+        moveFood
+        world' <- get
+        put $ world' & visited .~ []
     else gameOver
 
 gameOver :: Game World Settings' ()

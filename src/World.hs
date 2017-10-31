@@ -45,6 +45,12 @@ data FoodData = NewFoodData
     } deriving  ( Generic
                 , Show)
 
+data PlayerSettings = NewPlayerSettings
+    { _autoPlay :: Bool
+    , _commandOnStep :: Int
+    } deriving  ( Generic
+                , Show)
+
 data DynamicSettings = NewDynamicSettings
     { _costString :: String
     , _limit :: Int
@@ -58,6 +64,7 @@ data Settings = NewSettings
     , _snake' :: SnakeSettings
     , _food :: FoodSettings
     , _dynamic' :: DynamicSettings
+    , _player :: PlayerSettings 
     } deriving  ( Generic
                 , Show)
 
@@ -66,6 +73,7 @@ data Settings' = NewSettings'
     , _snakeSettings :: SnakeSettings
     , _foodSettings :: FoodSettings
     , _dynamicSettings :: DynamicEnv Int Double
+    , _playerSettings :: PlayerSettings
     } deriving  ( Generic )           
 
 makeLenses ''CostSettings
@@ -73,6 +81,7 @@ makeLenses ''GameSettings
 makeLenses ''SnakeSettings
 makeLenses ''FoodSettings
 makeLenses ''FoodData
+makeLenses ''PlayerSettings
 makeLenses ''DynamicSettings
 makeLenses ''Settings
 makeLenses ''Settings'
@@ -96,10 +105,13 @@ instance FromJSON DynamicSettings where
     parseJSON = genericParseJSON defaultOptions {
         fieldLabelModifier = drop 1}
 
-instance FromJSON FoodSettings where
+instance FromJSON PlayerSettings where
     parseJSON = genericParseJSON defaultOptions {
         fieldLabelModifier = drop 1}
 
+instance FromJSON FoodSettings where
+    parseJSON = genericParseJSON defaultOptions {
+        fieldLabelModifier = drop 1}
 instance FromJSON SnakeSettings where
     parseJSON = genericParseJSON defaultOptions {
         fieldLabelModifier = drop 1}        
@@ -128,6 +140,8 @@ data World = NewWorld
     , _isOver :: Bool
     , _gen :: StdGen
     , _table :: [Food]
+    , _tick :: Int
+    , _visited :: [Pos Int]
     } deriving (Read, Show)
 
 type Reward = Int
