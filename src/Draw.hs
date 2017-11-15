@@ -35,7 +35,7 @@ handleStep :: Float -> Game GameWorld Settings' ()
 handleStep _time = do
     conf <- ask
     if conf ^. gameSettings . auto
-    then zoom snakeWorld stepSnake
+    then Game . zoom snakeWorld . unwrap $ stepSnake
     else return ()
 
 handleResize :: (Int, Int) -> Game GameWorld Settings' ()
@@ -47,14 +47,14 @@ handleKey key state' = do
     let cmd = if conf ^. gameSettings . direct then commandSnake else commandMarkov
     case state' of
         Down -> case key of
-            SpecialKey KeyUp    -> zoom snakeWorld (cmd North)
-            SpecialKey KeyRight -> zoom snakeWorld (cmd East)
-            SpecialKey KeyDown  -> zoom snakeWorld (cmd South)
-            SpecialKey KeyLeft  -> zoom snakeWorld (cmd West)
+            SpecialKey KeyUp    -> Game . zoom snakeWorld . unwrap $ (cmd North)
+            SpecialKey KeyRight -> Game . zoom snakeWorld . unwrap $ (cmd East)
+            SpecialKey KeyDown  -> Game . zoom snakeWorld . unwrap $ (cmd South)
+            SpecialKey KeyLeft  -> Game . zoom snakeWorld . unwrap $ (cmd West)
             SpecialKey KeySpace -> do
                 if conf ^. gameSettings . auto
                 then return ()
-                else zoom snakeWorld stepSnake
+                else Game . zoom snakeWorld . unwrap $ stepSnake
             _ -> return ()
         _ -> return ()
 

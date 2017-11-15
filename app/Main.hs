@@ -13,6 +13,7 @@ import Control.Lens
 import Control.Monad.State
 import Control.Monad.Writer
 import Control.Monad.Reader
+import Control.Monad.Except
 import Control.Monad.Memo hiding (fromJust, isNothing)
 import Text.Parsec.Expr.Math
 import Control.Lens
@@ -139,6 +140,8 @@ handler s h f e w = do
                                     . flip runReaderT s 
                                     . flip runStateT w 
                                     . zoom gameWorld 
+                                    . runExceptT 
+                                    . unwrap
                                     $ f e
     when (txt /= "") $ do 
         hPutStrLn h txt

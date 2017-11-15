@@ -1,4 +1,16 @@
-{-# LANGUAGE TemplateHaskell, OverloadedStrings, DeriveGeneric, DeriveAnyClass, TypeApplications, DataKinds #-}
+{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE DeriveGeneric #-}
+-- {-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE DeriveFunctor #-}
+{-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+
+-- {-# LANGUAGE DerivingStrategies #-}
 
 module World where
 
@@ -7,6 +19,8 @@ import Control.Lens
 import Control.Monad.Reader
 import Control.Monad.Writer
 import Control.Monad.State
+import Control.Monad.Except
+-- import Control.Monad.Trans.Either
 import GHC.Generics
 import Data.Aeson.Types
 import Dynamic
@@ -120,12 +134,22 @@ instance FromJSON GameSettings where
     parseJSON = genericParseJSON defaultOptions {
                 fieldLabelModifier = drop 1}
 
-type Game s r = StateT s (ReaderT r (WriterT Log (MemoQV Int Double)))
+newtype Game s r a = 
+    Game { unwrap :: (ExceptT Error (StateT s (ReaderT r (WriterT Log (MemoQV Int Double)))) a) }
+    deriving ( Functor
+             , Applicative
+             , Monad
+             , MonadState s
+             , MonadReader r
+             , MonadWriter Log )
+
+-- deriving instance Zoom (Game s r) (Game t r) s t
+
+-- instance Zoom (Game s r) (Game t r) s t where
+    -- zoom l = Game . zoom l . unwrap
+
 type Log = String
-
-dynamicEnv = DynamicEnv {_dynamicCost = costLogistic, _dynamicLim = 10, _dynamicLog = False, _dynamicMaxSteps = 5}
-
--- type Pos = (Int, Int)
+type Error = ()
 
 data Direction
     = West

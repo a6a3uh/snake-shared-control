@@ -110,8 +110,9 @@ dirMarkov = do
                                             then toEnum i
                                             else minPossibleIndex xs (cs & ix i .~ 1000000000)
     
-    costs'   <- lift $ magnify dynamicSettings $ markovOut (x, y) ps pr
-                        
+    -- costs'   <- magnify dynamicSettings $ Game { unwrap = (lift . lift $ markovOut (x, y) ps pr) }
+    costs'   <- Game { unwrap = (lift . lift $ magnify dynamicSettings $ markovOut (x, y) ps pr) }
+    
     tell $ "MARKOV OUT> costs: " ++ show costs' ++ "\n"
     
     return $ minPossibleIndex (world ^. snake) costs' 
@@ -125,7 +126,7 @@ commandMarkov dir = do
         ps = world ^.. table . traverse . place
         p  =  head $ world ^. snake
         
-    newProbs <- lift $ magnify dynamicSettings $ markovIn p ps pr (fromEnum dir)
+    newProbs <- Game { unwrap = (lift . lift $ magnify dynamicSettings $ markovIn p ps pr (fromEnum dir)) }
 
     let changeProbs foods = fmap (\(a, p') -> a & prob .~ p') $ zipWith (,) foods newProbs
     
