@@ -23,12 +23,9 @@ displayMode gworld = InWindow "Snake" (gworld ^. resolution) (0, 0)
 
 handleEvent :: Event -> Game GameWorld Settings' ()
 handleEvent event = do
-    gworld <- get
     case event of
         EventResize newResolution   -> handleResize newResolution
-        EventKey key state' _ _     -> if gworld ^. snakeWorld . isOver
-            then return ()
-            else handleKey key state'
+        EventKey key state' _ _     -> handleKey key state'
         _ -> return ()
 
 handleStep :: Float -> Game GameWorld Settings' ()
@@ -65,7 +62,7 @@ drawWorld sc gworld = pictures
     [ drawBounds gworld
     , drawTable sc gworld
     , drawSnake sc gworld
-    , drawGameOver gworld
+    -- , drawGameOver gworld
     ]
 
 drawBounds :: GameWorld -> Picture
@@ -103,14 +100,14 @@ drawPos sc pic gworld (x, y) =
         y' = s * fromIntegral y
     in  translate x' y' pic
 
-drawGameOver :: GameWorld -> Picture
-drawGameOver gworld = if world ^. isOver
-    then pictures
-        [ color red (scale 0.2 0.2 (text "game over"))
-        , color blue (translate 0 (-50) (scale 0.2 0.2 (text ("score: " ++ show (length (world ^. snake))))))
-        ]
-    else blank
-    where world = gworld ^. snakeWorld
+-- drawGameOver :: GameWorld -> Picture
+-- drawGameOver gworld = if world ^. isOver
+--     then pictures
+--         [ color red (scale 0.2 0.2 (text "game over"))
+--         , color blue (translate 0 (-50) (scale 0.2 0.2 (text ("score: " ++ show (length (world ^. snake))))))
+--         ]
+--     else blank
+--     where world = gworld ^. snakeWorld
 
 ---------------------------------------
 

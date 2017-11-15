@@ -8,6 +8,7 @@ import Control.Monad.State
 import Control.Monad.Writer
 import Control.Monad.Reader
 import Control.Monad.Random
+import Control.Monad.Except
 
 import World
 
@@ -39,15 +40,20 @@ eatFood :: Game World Settings' Bool
 eatFood  = do
   conf <- ask
   world <- get
-  let rew = world ^? table . traverse . filtered (match world) . reward
+  when (world ^. snake == []) (throwError ZeroLength)
+  let rew = world ^? table.traverse.filtered (match world).reward
   modify (& stomack %~ (+ fromMaybe 0 rew))
   if (isJust rew) 
   then do
+    let r = fromJust rew
+    if r >= 0 
+    then modify (& goodFoodCounter %~ succ)
+    else modify (& badFoodCounter %~ succ)
     tell $ "FOOD> eaten!\n"
     if conf ^. foodSettings . exact . positions == []
     then return True
     else do
-      put $ world & isOver .~ True
+      throwError SingleGame
       return True
   else return False
   where match w fd = fd ^. place == head (w ^. snake)

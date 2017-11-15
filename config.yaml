@@ -6,11 +6,15 @@ game:
 # allow snake to cross itself (no restricted states)
   cross: False
 # steps per second 
-  rate: 5
+  rate: 50
 # world size.
   dimentions: 15
 # initial resolution of the world in pixels (window could be resized)
   pixels: [400, 400]
+# logging
+  log: False
+# timeout to stop game after N steps. If zero then never stop
+  timeout: 0
 player:
 # autoplay is on
   autoPlay: True

@@ -4,21 +4,13 @@ import Control.Lens
 import Control.Monad.State
 import Control.Monad.Writer
 import Control.Monad.Reader
+import Control.Monad.Except
 import Data.Maybe
 import Data.List
 import Markov
 import Dynamic
 import World
 import Food
-
--- todo add food move at startup
-
-stepSnake :: Game World Settings' ()
-stepSnake = do
-    world <- get
-    if world ^. isOver
-    then return ()
-    else stepWorld
 
 optimalCommand :: Pos Int -> [Food] -> Direction
 optimalCommand p t = dirSelect p posrew
@@ -30,46 +22,47 @@ optimalCommand p t = dirSelect p posrew
                                         | y1 - y0 >= 0 && y1 - y0 >= x1 - x0 = North
                                         | y1 - y0 <= 0 && y1 - y0 <= x1 - x0 = South
 
-stepWorld :: Game World Settings' ()
-stepWorld = do 
+stepSnake :: Game World Settings' ()
+stepSnake = do 
     world <- get
     conf <- ask
-    if conf ^. gameSettings . direct
-    then moveSnake (world ^. direction) 
+    when (world^.snake == []) (throwError ZeroLength)
+    when (conf^.gameSettings.timeout > 0 && conf^.gameSettings.timeout < world^.stepCounter) (throwError TimeOut)
+    put $ world & stepCounter %~ succ
+    world <- get
+    if conf^.gameSettings.direct
+    then moveSnake (world^.direction) 
     else do 
-        when (conf ^. playerSettings . autoPlay) $ do
-            if (conf ^. playerSettings . commandOnStep /= 0) 
-            then    if (world ^. tick >= conf ^. playerSettings . commandOnStep) 
+        when (conf^.playerSettings.autoPlay) $ do
+            if (conf^.playerSettings.commandOnStep /= 0) 
+            then    if (world^.tick >= conf^.playerSettings.commandOnStep) 
                     then do
-                        put $ world & tick .~ 0                        
-                        commandMarkov $ optimalCommand (head $ world ^. snake) (world ^. table)
+                        put $ world & tick.~0                        
+                        commandMarkov $ optimalCommand (head $ world^.snake) (world^.table)
                     else put $ world & tick %~ succ            
-            else    if ((head $ world ^. snake) `elem` (world ^. visited)) 
+            else    if ((head $ world^.snake) `elem` (world^.visited)) 
                     then do
                         put $ world & visited .~ []
-                        commandMarkov $ optimalCommand (head $ world ^. snake) (world ^. table)
-                    else put $ world & visited %~ ((head $ world ^. snake) :)
-        d <- dirMarkov
-        moveSnake d
-        -- dirMarkov >>= moveSnake
+                        commandMarkov $ optimalCommand (head $ world^.snake) (world^.table)
+                    else put $ world & visited %~ ((head $ world^.snake) :)
+        dirMarkov >>= moveSnake
     eaten <- eatFood
     if eaten
     then do
         moveFood
         world' <- get
         put $ world' & visited .~ []
-    else gameOver
+    else checkGameOver
 
-gameOver :: Game World Settings' ()
-gameOver = do
+checkGameOver :: Game World Settings' ()
+checkGameOver = do
     world <- get
     conf <- ask
-    let (x:xs) = world ^. snake
-        dims = conf ^. gameSettings . dimentions
-    if inBounds (dims, dims) x                   -- inside world
-        && ((x `notElem` xs) || conf ^. gameSettings . cross)           -- not eaten itself
-    then return ()
-    else put $ world & isOver .~ True
+    when (world ^. snake == []) (throwError ZeroLength)
+    let (x:xs) = world^.snake
+        dims = conf^.gameSettings.dimentions
+    when (not (inBounds (dims, dims) x)) $ throwError OutOfBounds
+    when (not ((x `notElem` xs) || conf^.gameSettings.cross)) $ throwError SelfCross
 
 inBounds :: (Int, Int) -> Pos Int -> Bool
 inBounds (xm, ym) (x, y) =
@@ -83,6 +76,7 @@ moves x y = [(x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)]
 moveSnake :: Direction -> Game World a ()
 moveSnake d = do
     world <- get
+    when (world ^. snake == []) (throwError ZeroLength)
     let (x, y) = head (world ^. snake)
         pos    = moves x y !! fromEnum d
     case compare (world ^. stomack) 0 of
@@ -97,7 +91,8 @@ dirMarkov :: Game World Settings' Direction
 dirMarkov = do 
     world <- get
     conf <- ask
-    let (x, y) = head (world ^. snake)
+    when (world ^. snake == []) (throwError ZeroLength)
+    let (x, y)  = head (world ^. snake)
         ps      = world ^.. table . traverse . place
         pr      = world ^.. table . traverse . prob
             
@@ -110,16 +105,17 @@ dirMarkov = do
                                             then toEnum i
                                             else minPossibleIndex xs (cs & ix i .~ 1000000000)
     
-    -- costs'   <- magnify dynamicSettings $ Game { unwrap = (lift . lift $ markovOut (x, y) ps pr) }
-    costs'   <- Game { unwrap = (lift . lift $ magnify dynamicSettings $ markovOut (x, y) ps pr) }
+    costs'   <- Game { unwrap = lift . lift $ magnify dynamicSettings $ markovOut (x, y) ps pr }
     
     tell $ "MARKOV OUT> costs: " ++ show costs' ++ "\n"
     
     return $ minPossibleIndex (world ^. snake) costs' 
 
-
 commandMarkov :: Direction -> Game World Settings' ()
 commandMarkov dir = do 
+    world <- get
+    when (world ^. snake == []) (throwError ZeroLength)
+    put $ world & commandCounter %~ succ
     world <- get
 
     let pr = world ^.. table . traverse . prob
@@ -139,6 +135,8 @@ commandMarkov dir = do
 
 commandSnake :: Direction -> Game World Settings' ()
 commandSnake dir = do 
+    world <- get
+    put $ world & commandCounter %~ succ
     world <- get
     put $ commandSnake' dir $ over (table . traverse . reward) pred world
     where   commandSnake' North = over direction (\d -> if d == South then South else North)

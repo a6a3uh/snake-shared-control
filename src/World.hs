@@ -7,9 +7,8 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE StandaloneDeriving #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-
+-- {-# LANGUAGE FlexibleInstances #-}
+-- {-# LANGUAGE MultiParamTypeClasses #-}
 -- {-# LANGUAGE DerivingStrategies #-}
 
 module World where
@@ -20,7 +19,6 @@ import Control.Monad.Reader
 import Control.Monad.Writer
 import Control.Monad.State
 import Control.Monad.Except
--- import Control.Monad.Trans.Either
 import GHC.Generics
 import Data.Aeson.Types
 import Dynamic
@@ -37,6 +35,8 @@ data GameSettings = NewGameSettings
     , _rate :: Int
     , _dimentions :: Int
     , _pixels :: (Int, Int)
+    , _log' :: Bool
+    , _timeout :: Int
     } deriving  ( Generic
                 , Show)
 
@@ -132,13 +132,16 @@ instance FromJSON SnakeSettings where
 
 instance FromJSON GameSettings where
     parseJSON = genericParseJSON defaultOptions {
-                fieldLabelModifier = drop 1}
+                fieldLabelModifier = \s -> case s of 
+                    "_log'"   ->  "log" 
+                    _           -> drop 1 s }
 
 newtype Game s r a = 
-    Game { unwrap :: (ExceptT Error (StateT s (ReaderT r (WriterT Log (MemoQV Int Double)))) a) }
+    Game { unwrap :: ExceptT Error (StateT s (ReaderT r (WriterT Log (MemoQV Int Double)))) a }
     deriving ( Functor
              , Applicative
              , Monad
+             , MonadError Error
              , MonadState s
              , MonadReader r
              , MonadWriter Log )
@@ -149,7 +152,7 @@ newtype Game s r a =
     -- zoom l = Game . zoom l . unwrap
 
 type Log = String
-type Error = ()
+data Error = ZeroLength | SelfCross | OutOfBounds | SingleGame | TimeOut | OtherError deriving (Show)
 
 data Direction
     = West
@@ -161,11 +164,14 @@ data World = NewWorld
     { _direction :: Direction
     , _snake :: [Pos Int]
     , _stomack :: Reward
-    , _isOver :: Bool
     , _gen :: StdGen
     , _table :: [Food]
     , _tick :: Int
     , _visited :: [Pos Int]
+    , _stepCounter :: Int
+    , _commandCounter :: Int
+    , _goodFoodCounter :: Int
+    , _badFoodCounter :: Int
     } deriving (Read, Show)
 
 type Reward = Int

@@ -9,14 +9,16 @@ import qualified Data.Text.IO as T
 import Data.Yaml
 import Data.Maybe
 import Data.Map
+import Data.Either
 import Control.Lens
 import Control.Monad.State
 import Control.Monad.Writer
 import Control.Monad.Reader
 import Control.Monad.Except
+-- import Control.Monad.Trans.Except
 import Control.Monad.Memo hiding (fromJust, isNothing)
 import Text.Parsec.Expr.Math
-import Control.Lens
+-- import Control.Lens
 import System.IO
 import System.Exit
 import World
@@ -42,7 +44,6 @@ main = do
             expr <- case parse $ cfg ^. dynamic' . costString of 
                         Left _ -> Nothing
                         Right e -> Just e
-            -- f <- flip evaluate expr
             let f x y = fromJust $ evaluate (fromList [("x",x), ("y",y)]) (Just expr)
                 f' (x, y) = f (fromIntegral x) (fromIntegral y)
             return $ NewSettings' 
@@ -62,28 +63,6 @@ main = do
             exitWith (ExitFailure 1)
     let config = fromJust config'
 
-    -- let cfg = decode $ T.encodeUtf8 j :: Maybe Settings
-    --     func (x, y) = do    config <- cfg
-    --                         let expr = parse $ config ^. dynamic' . costString
-    --                         f <- evaluate (fromList [("x",x), ("y",y)]) expr
-    --                         let f' (x, y) = f (fromIntegral x) (fromIntegral y) 
-    --                         f'
-    --     -- func = \x y -> Data.Maybe.fromJust $ evaluate (fromList [("x",x), ("y",y)]) (Just expr)
-    --     func' (x, y) = func (fromIntegral x) (fromIntegral y) 
-    --     config' = NewSettings' 
-    --         {
-    --           _gameSettings = config ^. game
-    --         , _snakeSettings = config ^. snake'
-    --         , _foodSettings = config ^. food
-    --         , _dynamicSettings = DynamicEnv 
-    --             { _dynamicCost = func'
-    --             , _dynamicLim = config ^. dynamic' . limit
-    --             , _dynamicLog = config ^. dynamic' . logging
-    --             , _dynamicMaxSteps = config ^. dynamic' . maxStepsSearch
-    --             }
-    --         }
-    
-    -- let config1 = eitherDecode $ T.encodeUtf8 j :: Either T.Text Settings1-- Either String Settings1
     -- 
     let gworld = 
             NewGameWorld 
@@ -91,10 +70,13 @@ main = do
                 { _direction = North
                 , _snake = [config ^. snakeSettings . positionInit]
                 , _stomack = config ^. snakeSettings . sizeInit
-                , _isOver = False
                 , _gen = mkStdGen seed
                 , _visited = []
                 , _tick = 0
+                , _stepCounter = 0
+                , _commandCounter = 0
+                , _goodFoodCounter = 0
+                , _badFoodCounter = 0
                 , _table =  let foods = config ^. foodSettings . exact 
                                 foodPlace p x r = NewFood {_place = x, _reward = r, _prob = p}
                             in case foods ^. positions of
@@ -134,17 +116,30 @@ handlerE s h f e w = do
 
 handler :: Settings' -> Handle -> (e -> Game GameWorld Settings' ()) -> e -> WholeWorld -> IO WholeWorld
 handler s h f e w = do
-    let ((((_, w'), txt), cQ), cV) =  flip runMemo (w ^. cacheV) 
-                                    . flip runMemoT (w ^. cacheQ) 
-                                    . runWriterT 
-                                    . flip runReaderT s 
-                                    . flip runStateT w 
-                                    . zoom gameWorld 
-                                    . runExceptT 
-                                    . unwrap
-                                    $ f e
+    let ((((err, w'), txt), cQ), cV) =    flip runMemo (w ^. cacheV) 
+                                        . flip runMemoT (w ^. cacheQ) 
+                                        . runWriterT 
+                                        . flip runReaderT s 
+                                        . flip runStateT w 
+                                        . zoom gameWorld 
+                                        . runExceptT 
+                                        . unwrap
+                                        $ f e -- `catchError` (const $ tell "GAMEOVER")
+
+    when (isLeft err) $ do
+        putStrLn $ "GAMEOVER due to "   ++ show ((\(Left err') -> err') err)
+        putStrLn $ "Total steps: "      ++ show (w'^.gameWorld.snakeWorld.stepCounter)
+        putStrLn $ "Commands issued: "  ++ show (w'^.gameWorld.snakeWorld.commandCounter)
+        putStrLn $ "Good Food eaten: "  ++ show (w'^.gameWorld.snakeWorld.goodFoodCounter)
+        putStrLn $ "Bad Food eaten: "   ++ show (w'^.gameWorld.snakeWorld.badFoodCounter)
+        putStrLn $ "Total length: "     ++ show (length $ w'^.gameWorld.snakeWorld.snake)
+        
+        hClose h
+        System.Exit.exitSuccess
+
     when (txt /= "") $ do 
         hPutStrLn h txt
-        putStrLn txt
+        when (s^.gameSettings.log') $ putStrLn txt
 
     return $ w' & cacheQ .~ cQ & cacheV .~ cV
+    where 

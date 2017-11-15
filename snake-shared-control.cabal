@@ -26,6 +26,7 @@ library
                      , Unique
                      , lens
                      , mtl
+                     , transformers
                     --  , linear
                     --  , aeson
                     --  , lens-aeson
@@ -55,6 +56,7 @@ executable snake-shared-control-exe
                      , yaml
                      , monad-memo
                      , containers
+                     , transformers
                      , ParserFunction
                      , pomdp
   default-language:    Haskell2010
