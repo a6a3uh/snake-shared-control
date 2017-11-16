@@ -27,7 +27,7 @@ import Dynamic
 data Opts = Opts
     { _nogui :: Bool
     , _batch :: Int
-    , _log' :: Bool }
+    , _verbose :: Bool }
 
 data CostSettings = NewCostSettings
     { _function :: String
@@ -157,7 +157,7 @@ newtype Game s r a =
     -- zoom l = Game . zoom l . unwrap
 
 type Log = String
-data Error = ZeroLength | SelfCross | OutOfBounds | SingleGame | TimeOut | OtherError deriving (Show)
+data Error = NoError | ZeroLength | SelfCross | OutOfBounds | SingleGame | TimeOut | OtherError deriving (Show)
 
 data Direction
     = West

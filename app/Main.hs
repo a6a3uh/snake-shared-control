@@ -43,15 +43,15 @@ options = Opts
         ( long "nogui"
         <> short 'n'
         <> showDefault
-        <> help "do not display GUI (not implemented yet)" )
+        <> help "do not display GUI" )
     <*> option auto
         ( long "batch"
         <> short 'b'
-        <> help "run in batch mode (not implemented yet"
+        <> help "run in batch mode"
         <> showDefault
         <> value 1)
     <*> switch
-        ( long "log"
+        ( long "verbose"
         <> short 'v'
         <> help "show log in terminal" )
 
@@ -59,8 +59,8 @@ main :: IO ()
 main = programm =<< execParser opts
     where opts = info (options <**> helper)
             ( fullDesc
-            <> progDesc "Print a greeting for TARGET"
-            <> header "hello - a test for optparse-applicative" )
+            <> progDesc "Shared Control Snake using POMD"
+            <> header "The Snake" )
 
 programm :: Opts -> IO ()   
 programm op = do
@@ -133,15 +133,20 @@ programm op = do
                 exitMessage outh "direct should be False for non gui mode (no direct control from user possible)"
             when (not $ config^.playerSettings.autoPlay) $
                 exitMessage outh "autoPlay should be true ti run in non GUI mode (programm decides on control input)"        
+            let singleRun seed = do 
+                    let stepSnake' = do stepSnake
+                                        return NoError
+                        simulate   = do e <- stepSnake' `catchError` \e -> (return e)
+                                        case e of 
+                                            NoError -> simulate
+                                            _       -> throwError e
+                        ((((err, w), txt), _), _) = retrieve (wholeWorld & gameWorld.snakeWorld.gen .~ mkStdGen seed) config (gameWorld.snakeWorld) simulate
 
-            let stepSnake' = do stepSnake
-                                return True
-                simulate   = do p <- stepSnake' `catchError` const (return False)
-                                when p simulate
-                ((((err, w), txt), _), _) = retrieve wholeWorld config (gameWorld.snakeWorld) simulate
+                    when (config^.opts.verbose) $ putStrLn txt 
+                    when (isLeft err) $ output err $ w^.gameWorld.snakeWorld  
 
-            when (config^.opts.log') $ putStrLn txt 
-            when (isLeft err) $ output err $ w^.gameWorld.snakeWorld           
+            seeds <- replicateM (config^.opts.batch) randomIO 
+            mapM_ singleRun seeds
         
     else do
         when (config^.opts.batch /= 1) $
@@ -178,18 +183,20 @@ handler s h f e w = do
 
     when (txt /= "") $ do 
         hPutStrLn h txt
-        when (s^.opts.log') $ putStrLn txt
+        when (s^.opts.verbose) $ putStrLn txt
 
     return $ w' & cacheQ .~ cQ & cacheV .~ cV
     where 
 
 output err w = do
+    putStrLn $ take 40 . repeat $ '*'
     putStrLn $ "GAMEOVER due to "   ++ show ((\(Left err') -> err') err)
+    putStrLn $ take 40 . repeat $ '*'    
     putStrLn $ "Total steps: "      ++ show (w^.stepCounter)
     putStrLn $ "Commands issued: "  ++ show (w^.commandCounter)
     putStrLn $ "Good Food eaten: "  ++ show (w^.goodFoodCounter)
     putStrLn $ "Bad Food eaten: "   ++ show (w^.badFoodCounter)
-    putStrLn $ "Total length: "     ++ show (length $ w^.snake)
+    putStrLn $ "Total length: "     ++ show (length $ w^.snake) ++ "\n"
         
 retrieve w s z g = flip runMemo (w^.cacheV) 
     . flip runMemoT (w^.cacheQ) 
