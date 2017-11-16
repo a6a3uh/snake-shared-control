@@ -31,9 +31,8 @@ handleEvent event = do
 handleStep :: Float -> Game GameWorld Settings' ()
 handleStep _time = do
     conf <- ask
-    if conf ^. gameSettings . auto
-    then Game . zoom snakeWorld . unwrap $ stepSnake
-    else return ()
+    when (conf ^. gameSettings . autoSteps) (Game . zoom snakeWorld . unwrap $ stepSnake)
+    -- else return True
 
 handleResize :: (Int, Int) -> Game GameWorld Settings' ()
 handleResize newResolution = modify (& resolution .~ newResolution)
@@ -49,7 +48,7 @@ handleKey key state' = do
             SpecialKey KeyDown  -> Game . zoom snakeWorld . unwrap $ (cmd South)
             SpecialKey KeyLeft  -> Game . zoom snakeWorld . unwrap $ (cmd West)
             SpecialKey KeySpace -> do
-                if conf ^. gameSettings . auto
+                if conf ^. gameSettings . autoSteps
                 then return ()
                 else Game . zoom snakeWorld . unwrap $ stepSnake
             _ -> return ()

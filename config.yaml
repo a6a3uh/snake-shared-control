@@ -1,6 +1,6 @@
 game:
 # if true then steps at rate otherwise press space for each step
-  auto: True
+  autoSteps: True
 # if true then direct control otherwise control through Markov inference
   direct: False
 # allow snake to cross itself (no restricted states)
@@ -11,8 +11,6 @@ game:
   dimentions: 15
 # initial resolution of the world in pixels (window could be resized)
   pixels: [400, 400]
-# logging
-  log: False
 # timeout to stop game after N steps. If zero then never stop
   timeout: 0
 player:
@@ -28,7 +26,7 @@ dynamic:
 # turn on logging DP process
   logging: False
 # DP step limit. Use 0 for unconstrained search
-  maxStepsSearch: 2
+  maxStepsSearch: 0
 snake:
 # initial length of the snake
   sizeInit: 5

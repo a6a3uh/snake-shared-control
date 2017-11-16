@@ -23,19 +23,24 @@ import GHC.Generics
 import Data.Aeson.Types
 import Dynamic
 
+
+data Opts = Opts
+    { _nogui :: Bool
+    , _batch :: Int
+    , _log' :: Bool }
+
 data CostSettings = NewCostSettings
     { _function :: String
     } deriving  ( Generic
                 , Show)
 
 data GameSettings = NewGameSettings
-    { _auto :: Bool
+    { _autoSteps :: Bool
     , _direct :: Bool
     , _cross :: Bool
     , _rate :: Int
     , _dimentions :: Int
     , _pixels :: (Int, Int)
-    , _log' :: Bool
     , _timeout :: Int
     } deriving  ( Generic
                 , Show)
@@ -88,8 +93,10 @@ data Settings' = NewSettings'
     , _foodSettings :: FoodSettings
     , _dynamicSettings :: DynamicEnv Int Double
     , _playerSettings :: PlayerSettings
+    , _opts :: Opts
     } deriving  ( Generic )           
 
+makeLenses ''Opts
 makeLenses ''CostSettings
 makeLenses ''GameSettings
 makeLenses ''SnakeSettings
@@ -132,9 +139,7 @@ instance FromJSON SnakeSettings where
 
 instance FromJSON GameSettings where
     parseJSON = genericParseJSON defaultOptions {
-                fieldLabelModifier = \s -> case s of 
-                    "_log'"   ->  "log" 
-                    _           -> drop 1 s }
+        fieldLabelModifier = drop 1} 
 
 newtype Game s r a = 
     Game { unwrap :: ExceptT Error (StateT s (ReaderT r (WriterT Log (MemoQV Int Double)))) a }

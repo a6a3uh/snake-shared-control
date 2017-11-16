@@ -40,8 +40,8 @@ eatFood :: Game World Settings' Bool
 eatFood  = do
   conf <- ask
   world <- get
-  when (world ^. snake == []) (throwError ZeroLength)
-  let rew = world ^? table.traverse.filtered (match world).reward
+  p <- maybe (throwError ZeroLength) return $ listToMaybe (world ^. snake)
+  let rew = world ^? table.traverse.filtered (match p).reward
   modify (& stomack %~ (+ fromMaybe 0 rew))
   if (isJust rew) 
   then do
@@ -56,4 +56,4 @@ eatFood  = do
       throwError SingleGame
       return True
   else return False
-  where match w fd = fd ^. place == head (w ^. snake)
+  where match p fd = fd ^. place == p

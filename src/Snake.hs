@@ -1,6 +1,6 @@
 module Snake (stepSnake, commandSnake, commandMarkov) where
 
-import Control.Lens
+import Control.Lens hiding (uncons)
 import Control.Monad.State
 import Control.Monad.Writer
 import Control.Monad.Reader
@@ -27,6 +27,9 @@ stepSnake = do
     world <- get
     conf <- ask
     when (world^.snake == []) (throwError ZeroLength)
+
+    h <- maybe (throwError ZeroLength) return $ listToMaybe (world ^. snake)
+    
     when (conf^.gameSettings.timeout > 0 && conf^.gameSettings.timeout < world^.stepCounter) (throwError TimeOut)
     put $ world & stepCounter %~ succ
     world <- get
@@ -38,13 +41,13 @@ stepSnake = do
             then    if (world^.tick >= conf^.playerSettings.commandOnStep) 
                     then do
                         put $ world & tick.~0                        
-                        commandMarkov $ optimalCommand (head $ world^.snake) (world^.table)
+                        commandMarkov $ optimalCommand h (world^.table)
                     else put $ world & tick %~ succ            
             else    if ((head $ world^.snake) `elem` (world^.visited)) 
                     then do
                         put $ world & visited .~ []
-                        commandMarkov $ optimalCommand (head $ world^.snake) (world^.table)
-                    else put $ world & visited %~ ((head $ world^.snake) :)
+                        commandMarkov $ optimalCommand h (world^.table)
+                    else put $ world & visited %~ (h:)
         dirMarkov >>= moveSnake
     eaten <- eatFood
     if eaten
@@ -58,9 +61,8 @@ checkGameOver :: Game World Settings' ()
 checkGameOver = do
     world <- get
     conf <- ask
-    when (world ^. snake == []) (throwError ZeroLength)
-    let (x:xs) = world^.snake
-        dims = conf^.gameSettings.dimentions
+    (x,xs) <- maybe (throwError ZeroLength) return $ uncons (world ^. snake)
+    let dims = conf^.gameSettings.dimentions
     when (not (inBounds (dims, dims) x)) $ throwError OutOfBounds
     when (not ((x `notElem` xs) || conf^.gameSettings.cross)) $ throwError SelfCross
 
@@ -76,24 +78,24 @@ moves x y = [(x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)]
 moveSnake :: Direction -> Game World a ()
 moveSnake d = do
     world <- get
-    when (world ^. snake == []) (throwError ZeroLength)
-    let (x, y) = head (world ^. snake)
-        pos    = moves x y !! fromEnum d
+    (x,y) <- maybe (throwError ZeroLength) return $ listToMaybe (world ^. snake)
+    
+    let pos    = moves x y !! fromEnum d
     case compare (world ^. stomack) 0 of
         LT -> put $ world & snake %~ init   & stomack %~ succ -- check for init of empty list !!!
         GT -> put $ world & snake %~ (pos:) & stomack %~ pred
         EQ -> put $ world & snake %~ (\xs -> pos : init xs)
     world' <- get
-    tell $ "STEP> head: " ++ show (head $ world' ^. snake) ++ "\n"
+    h <- maybe (throwError ZeroLength) return $ listToMaybe (world' ^. snake)
+    tell $ "STEP> head: " ++ show h ++ "\n"
 
 
 dirMarkov :: Game World Settings' Direction
 dirMarkov = do 
     world <- get
     conf <- ask
-    when (world ^. snake == []) (throwError ZeroLength)
-    let (x, y)  = head (world ^. snake)
-        ps      = world ^.. table . traverse . place
+    (x,y) <- maybe (throwError ZeroLength) return $ listToMaybe (world ^. snake)
+    let ps      = world ^.. table . traverse . place
         pr      = world ^.. table . traverse . prob
             
         minPossibleIndex xs cs =    let minIndex ys = fromJust $ elemIndex (minimum ys) ys
@@ -114,13 +116,12 @@ dirMarkov = do
 commandMarkov :: Direction -> Game World Settings' ()
 commandMarkov dir = do 
     world <- get
-    when (world ^. snake == []) (throwError ZeroLength)
+    p <- maybe (throwError ZeroLength) return $ listToMaybe (world ^. snake)
     put $ world & commandCounter %~ succ
     world <- get
 
     let pr = world ^.. table . traverse . prob
         ps = world ^.. table . traverse . place
-        p  =  head $ world ^. snake
         
     newProbs <- Game { unwrap = (lift . lift $ magnify dynamicSettings $ markovIn p ps pr (fromEnum dir)) }
 

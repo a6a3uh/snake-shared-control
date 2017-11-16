@@ -8,13 +8,16 @@ import qualified Data.Text.Encoding as T
 import qualified Data.Text.IO as T
 import Data.Yaml
 import Data.Maybe
-import Data.Map
+import Data.Map hiding (take)
 import Data.Either
 import Control.Lens
 import Control.Monad.State
-import Control.Monad.Writer
+import Control.Monad.Writer hiding ((<>))
 import Control.Monad.Reader
 import Control.Monad.Except
+import qualified Options.Applicative as O
+import Options.Applicative hiding (Parser)
+import Data.Semigroup ((<>))
 -- import Control.Monad.Trans.Except
 import Control.Monad.Memo hiding (fromJust, isNothing)
 import Text.Parsec.Expr.Math
@@ -23,9 +26,8 @@ import System.IO
 import System.Exit
 import World
 import Draw
+import Snake
 import Dynamic
-
-
 
 data WholeWorld = NewWholeWorld
     { _gameWorld :: GameWorld
@@ -33,10 +35,35 @@ data WholeWorld = NewWholeWorld
     , _cacheV :: Map (Int, Int, Int) Double
     }
 
-makeLenses ''WholeWorld         
+makeLenses ''WholeWorld    
+
+options :: O.Parser Opts
+options = Opts
+    <$> switch
+        ( long "nogui"
+        <> short 'n'
+        <> showDefault
+        <> help "do not display GUI (not implemented yet)" )
+    <*> option auto
+        ( long "batch"
+        <> short 'b'
+        <> help "run in batch mode (not implemented yet"
+        <> showDefault
+        <> value 1)
+    <*> switch
+        ( long "log"
+        <> short 'v'
+        <> help "show log in terminal" )
 
 main :: IO ()
-main = do
+main = programm =<< execParser opts
+    where opts = info (options <**> helper)
+            ( fullDesc
+            <> progDesc "Print a greeting for TARGET"
+            <> header "hello - a test for optparse-applicative" )
+
+programm :: Opts -> IO ()   
+programm op = do
     j <- T.readFile "config.yaml"
     seed <- randomIO 
     let config' = do
@@ -57,6 +84,7 @@ main = do
                         , _dynamicLog = cfg ^. dynamic' . logging
                         , _dynamicMaxSteps = cfg ^. dynamic' . maxStepsSearch
                         }
+                    , _opts = op
                     }
     when (isNothing config') $ do
             putStrLn "Error parsing config"
@@ -96,9 +124,33 @@ main = do
                     (return . drawWorld (config ^. gameSettings . dimentions) . flip (^.) gameWorld)
 
     outh <- openFile "output.txt" WriteMode
-                    
-    play'   (handlerE config outh handleEvent)
-            (handler  config outh handleStep)
+
+    if config^.opts.nogui
+    then do
+            when (not $ config^.gameSettings.autoSteps) $ 
+                exitMessage outh "autoSteps should be true for non gui mode (no user input should be required to initiate each step)"
+            when (config^.gameSettings.direct) $ 
+                exitMessage outh "direct should be False for non gui mode (no direct control from user possible)"
+            when (not $ config^.playerSettings.autoPlay) $
+                exitMessage outh "autoPlay should be true ti run in non GUI mode (programm decides on control input)"        
+
+            let stepSnake' = do stepSnake
+                                return True
+                simulate   = do p <- stepSnake' `catchError` const (return False)
+                                when p simulate
+                ((((err, w), txt), _), _) = retrieve wholeWorld config (gameWorld.snakeWorld) simulate
+
+            when (config^.opts.log') $ putStrLn txt 
+            when (isLeft err) $ output err $ w^.gameWorld.snakeWorld           
+        
+    else do
+        when (config^.opts.batch /= 1) $
+            do  putStrLn "batch is only possible for nogui mode"
+                hClose outh
+                System.Exit.exitSuccess                
+
+        play' (handlerE config outh handleEvent)
+              (handler  config outh handleStep)
 
     hClose outh
 
@@ -114,32 +166,41 @@ handlerE s h f e w = do
             _ -> handler s h f e w
         _ -> handler s h f e w
 
+
 handler :: Settings' -> Handle -> (e -> Game GameWorld Settings' ()) -> e -> WholeWorld -> IO WholeWorld
 handler s h f e w = do
-    let ((((err, w'), txt), cQ), cV) =    flip runMemo (w ^. cacheV) 
-                                        . flip runMemoT (w ^. cacheQ) 
-                                        . runWriterT 
-                                        . flip runReaderT s 
-                                        . flip runStateT w 
-                                        . zoom gameWorld 
-                                        . runExceptT 
-                                        . unwrap
-                                        $ f e -- `catchError` (const $ tell "GAMEOVER")
+    let ((((err, w'), txt), cQ), cV) = retrieve w s gameWorld (f e)
 
     when (isLeft err) $ do
-        putStrLn $ "GAMEOVER due to "   ++ show ((\(Left err') -> err') err)
-        putStrLn $ "Total steps: "      ++ show (w'^.gameWorld.snakeWorld.stepCounter)
-        putStrLn $ "Commands issued: "  ++ show (w'^.gameWorld.snakeWorld.commandCounter)
-        putStrLn $ "Good Food eaten: "  ++ show (w'^.gameWorld.snakeWorld.goodFoodCounter)
-        putStrLn $ "Bad Food eaten: "   ++ show (w'^.gameWorld.snakeWorld.badFoodCounter)
-        putStrLn $ "Total length: "     ++ show (length $ w'^.gameWorld.snakeWorld.snake)
-        
+        output err $ w'^.gameWorld.snakeWorld
         hClose h
         System.Exit.exitSuccess
 
     when (txt /= "") $ do 
         hPutStrLn h txt
-        when (s^.gameSettings.log') $ putStrLn txt
+        when (s^.opts.log') $ putStrLn txt
 
     return $ w' & cacheQ .~ cQ & cacheV .~ cV
     where 
+
+output err w = do
+    putStrLn $ "GAMEOVER due to "   ++ show ((\(Left err') -> err') err)
+    putStrLn $ "Total steps: "      ++ show (w^.stepCounter)
+    putStrLn $ "Commands issued: "  ++ show (w^.commandCounter)
+    putStrLn $ "Good Food eaten: "  ++ show (w^.goodFoodCounter)
+    putStrLn $ "Bad Food eaten: "   ++ show (w^.badFoodCounter)
+    putStrLn $ "Total length: "     ++ show (length $ w^.snake)
+        
+retrieve w s z g = flip runMemo (w^.cacheV) 
+    . flip runMemoT (w^.cacheQ) 
+    . runWriterT 
+    . flip runReaderT s 
+    . flip runStateT w 
+    . zoom z 
+    . runExceptT 
+    . unwrap $ g
+
+exitMessage outh msg = do 
+    putStrLn msg
+    hClose outh
+    System.Exit.exitSuccess
