@@ -6,7 +6,7 @@ game:
 # allow snake to cross itself (no restricted states)
   cross: False
 # steps per second 
-  rate: 50
+  rate: 5
 # world size.
   dimentions: 15
 # initial resolution of the world in pixels (window could be resized)

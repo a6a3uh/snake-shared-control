@@ -157,7 +157,7 @@ newtype Game s r a =
     -- zoom l = Game . zoom l . unwrap
 
 type Log = String
-data Error = NoError | ZeroLength | SelfCross | OutOfBounds | SingleGame | TimeOut | OtherError deriving (Show)
+data Error = NoError | ZeroLength | SelfCross | OutOfBounds | SingleGame | TimeOut | OtherError deriving (Show, Ord, Eq)
 
 data Direction
     = West

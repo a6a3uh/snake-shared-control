@@ -143,10 +143,22 @@ programm op = do
                         ((((err, w), txt), _), _) = retrieve (wholeWorld & gameWorld.snakeWorld.gen .~ mkStdGen seed) config (gameWorld.snakeWorld) simulate
 
                     when (config^.opts.verbose) $ putStrLn txt 
-                    when (isLeft err) $ output err $ w^.gameWorld.snakeWorld  
+                    when (isLeft err) $ output err $ w^.gameWorld.snakeWorld
+                    return (err, w)
 
             seeds <- replicateM (config^.opts.batch) randomIO 
-            mapM_ singleRun seeds
+            results <- mapM singleRun seeds
+            putStrLn $ take 40 . repeat $ '*'
+            putStrLn $ "SUMMARY"
+            putStrLn $ take 40 . repeat $ '*'            
+            putStrLn $ show $ fromListWith (+) [(x, 1) | x <- lefts (results^..traverse._1)]
+            let ws = results^..traverse._2
+                mean xs = fromIntegral (sum xs) / fromIntegral (length xs)
+            putStrLn $ "Total steps MEAN: "     ++ show (mean $ ws^..traverse.gameWorld.snakeWorld.stepCounter)
+            putStrLn $ "Commands issued MEAN: " ++ show (mean $ ws^..traverse.gameWorld.snakeWorld.commandCounter)
+            putStrLn $ "Good Food eaten MEAN: " ++ show (mean $ ws^..traverse.gameWorld.snakeWorld.goodFoodCounter)
+            putStrLn $ "Bad Food eaten MEAN: "  ++ show (mean $ ws^..traverse.gameWorld.snakeWorld.badFoodCounter)
+            putStrLn $ "Total length MEAN: "    ++ show (mean $ length <$> ws^..traverse.gameWorld.snakeWorld.snake) ++ "\n"
         
     else do
         when (config^.opts.batch /= 1) $

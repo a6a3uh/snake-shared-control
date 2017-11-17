@@ -20,9 +20,7 @@ randomTable dims rews nums = do
   numderFoods <- getRandomR nums
   rewards' <- sequence $ replicate numderFoods rewardFoods
   places <- sequence $ replicate numderFoods posFoods
-  if length (unique places) /= length places
-  then randomTable dims rews nums
-  else return $ zipWith NewFood places rewards' <*> [1 / fromIntegral numderFoods]
+  return $ zipWith NewFood (unique places) rewards' <*> [1 / fromIntegral numderFoods]
 
 moveFood :: Game World Settings' ()
 moveFood = do
