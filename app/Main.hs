@@ -198,7 +198,6 @@ handler s h f e w = do
         when (s^.opts.verbose) $ putStrLn txt
 
     return $ w' & cacheQ .~ cQ & cacheV .~ cV
-    where 
 
 output err w = do
     putStrLn $ take 40 . repeat $ '*'

@@ -6,6 +6,7 @@ import Control.Monad.Writer
 import Control.Monad.Reader
 import Control.Monad.Except
 import Data.Maybe
+import Data.Function
 import Data.List
 import Markov
 import Dynamic
@@ -72,15 +73,15 @@ inBounds (xm, ym) (x, y) =
         yms = ym `div` 2
     in  -xms <= x && x <= xms && -yms <= y && y <= yms
 
-moves :: Int -> Int -> [(Int, Int)]
-moves x y = [(x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)]
+moves :: (Int, Int) -> [(Int, Int)]
+moves (x, y) = [(x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)]
 
 moveSnake :: Direction -> Game World a ()
 moveSnake d = do
     world <- get
-    (x,y) <- maybe (throwError ZeroLength) return $ listToMaybe (world ^. snake)
+    p <- maybe (throwError ZeroLength) return $ listToMaybe (world ^. snake)
     
-    let pos    = moves x y !! fromEnum d
+    let pos    = moves p !! fromEnum d
     case compare (world ^. stomack) 0 of
         LT -> put $ world & snake %~ init   & stomack %~ succ -- check for init of empty list !!!
         GT -> put $ world & snake %~ (pos:) & stomack %~ pred
@@ -89,29 +90,23 @@ moveSnake d = do
     h <- maybe (throwError ZeroLength) return $ listToMaybe (world' ^. snake)
     tell $ "STEP> head: " ++ show h ++ "\n"
 
-
 dirMarkov :: Game World Settings' Direction
 dirMarkov = do 
     world <- get
     conf <- ask
-    (x,y) <- maybe (throwError ZeroLength) return $ listToMaybe (world ^. snake)
-    let ps      = world ^.. table . traverse . place
-        pr      = world ^.. table . traverse . prob
-            
-        minPossibleIndex xs cs =    let minIndex ys = fromJust $ elemIndex (minimum ys) ys
-                                        i = minIndex cs 
-                                    in  if conf ^. gameSettings . cross
-                                        then toEnum i
-                                        else
-                                            if (moves x y !! i) `notElem` xs || cs !! i == 1000000000
-                                            then toEnum i
-                                            else minPossibleIndex xs (cs & ix i .~ 1000000000)
-    
-    costs'   <- Game { unwrap = lift . lift $ magnify dynamicSettings $ markovOut (x, y) ps pr }
-    
-    tell $ "MARKOV OUT> costs: " ++ show costs' ++ "\n"
-    
-    return $ minPossibleIndex (world ^. snake) costs' 
+    x <- maybe (throwError ZeroLength) return $ listToMaybe (world^.snake)
+    let ps = world^..table.traverse.place
+        pr = world^..table.traverse.prob
+        cost x' = Game { unwrap = lift . lift $ magnify dynamicSettings $ markovOut ps pr x' }
+    c <- cost x
+    tell $ "MARKOV OUT> costs: " ++ show c ++ "\n"    
+    let f = if (conf^.gameSettings.cross) 
+            then const True 
+            else (\v -> (v^._3) `notElem` (world^.snake))
+        variants = sortBy (compare `on` (^._1)) $ zip3 c [West ..] (moves x)
+        variants' = filter f variants
+
+    maybe (throwError SelfCross) return $ listToMaybe (variants'^..traverse._2)
 
 commandMarkov :: Direction -> Game World Settings' ()
 commandMarkov dir = do 
