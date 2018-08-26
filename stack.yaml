@@ -39,9 +39,9 @@ resolver: nightly-2017-11-15 #lts-9.7
 packages:
 - .
 - location:
-    pomdp
-    # git: git@github.com:a6a3uh/POMDP.git
-    # commit: 2e496df51dbc4fbdc9c6a13494e381a7672feeec
+    # pomdp
+    git: git@github.com:a6a3uh/POMDP.git
+    commit: HEAD
   extra-dep: true
 # Dependency packages to be pulled from upstream that are not in the resolver
 # (e.g., acme-missiles-0.3)

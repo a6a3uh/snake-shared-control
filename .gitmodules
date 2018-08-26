@@ -1,3 +1,0 @@
-[submodule "pomdp"]
-	path = pomdp
-	url = git@gitlab.com:a6a3uh/pomdp.git
