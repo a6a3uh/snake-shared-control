@@ -31,4 +31,4 @@ There are command line parameters controlling execution as well. To read more us
 
 # Thanks
 
-Graphics part is havily inspired by [this](https://github.com/tfausak/haskell-snake-game) project.
+Graphics part is heavily inspired by [this](https://github.com/tfausak/haskell-snake-game) project.
